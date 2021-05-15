@@ -1,0 +1,40 @@
+{
+    "name": "tg-bot-server",
+    "description": "The server for telegram bot",
+    "version": "0.1.0",
+    "main": "dist/index.js",
+    "author": "Nikita Charushin <svifty7@gmail.com>",
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+        "watch": "nodemon",
+        "lint": "eslint 'src/**/*.{js,ts}'"
+    },
+    "dependencies": {
+        "dotenv": "^9.0.2",
+        "lodash": "^4.17.21",
+        "mongoose": "^5.12.9",
+        "node-telegram-bot-api": "^0.53.0",
+        "ts-node": "^9.1.1"
+    },
+    "devDependencies": {
+        "@babel/cli": "^7.13.16",
+        "@babel/core": "^7.14.2",
+        "@babel/node": "^7.14.2",
+        "@babel/preset-env": "^7.14.2",
+        "@types/lodash": "^4.14.169",
+        "@types/mongoose": "^5.10.5",
+        "@types/node": "^15.0.3",
+        "@types/node-telegram-bot-api": "^0.51.1",
+        "@typescript-eslint/eslint-plugin": "^4.23.0",
+        "@typescript-eslint/parser": "^4.23.0",
+        "eslint": "^7.26.0",
+        "eslint-config-airbnb-base": "^14.2.1",
+        "eslint-plugin-import": "^2.22.1",
+        "nodemon": "^2.0.7",
+        "typescript": "^4.2.4"
+    },
+    "engines": {
+        "node": "^14.16.1"
+    }
+}
