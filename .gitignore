@@ -1,6 +1,8 @@
 .DS_Store
 node_modules
 /dist
+/server
+/client
 yarn.lock
 
 # local env files

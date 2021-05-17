@@ -9,7 +9,7 @@ export default class Bot {
     private readonly bot: TelegramBot;
 
     public constructor() {
-        this.bot = new TelegramBot(<string>process.env.TOKEN, { polling: true });
+        this.bot = new TelegramBot(<string>process.env.TG_TOKEN, { polling: true });
 
         this.init();
     }
