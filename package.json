@@ -12,6 +12,7 @@
         "lint": "eslint 'src/**/*.{js,ts}'"
     },
     "dependencies": {
+        "bson": "^1.1.6",
         "lodash": "^4.17.21",
         "mongoose": "^5.12.9",
         "node-telegram-bot-api": "^0.53.0"

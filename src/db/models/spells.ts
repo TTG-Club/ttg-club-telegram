@@ -1,6 +1,11 @@
 import * as mongoose from 'mongoose';
+import BSON from 'bson';
 
 const spellSchema = new mongoose.Schema({
+    _id: {
+        type: BSON.ObjectId,
+        required: true
+    },
     name: {
         type: String,
         required: true

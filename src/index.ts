@@ -1,7 +1,7 @@
 import DataBase from './db';
-import Bot from './bot';
+import SpellActions from './bot/actions/SpellActions';
 
 // eslint-disable-next-line no-new
 new DataBase();
 // eslint-disable-next-line no-new
-new Bot();
+new SpellActions();

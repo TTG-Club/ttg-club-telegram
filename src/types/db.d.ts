@@ -1,5 +1,6 @@
 declare namespace DB {
     interface ISpell {
+        readonly _id: string,
         readonly name: string,
         readonly aliases: string[],
         readonly level: number,
