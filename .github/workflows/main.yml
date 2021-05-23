@@ -20,11 +20,13 @@ jobs:
                         echo PORT=${{ secrets.SERVER_PORT }}
                         echo NTBA_FIX_319=${{ secrets.NTBA_FIX_319 }}
                         echo TG_TOKEN=${{ secrets.TG_TOKEN }}
+                        echo TG_USER_ID=${{ secrets.TG_USER_ID }}
                         echo DB_HOST=${{ secrets.DB_HOST }}
                         echo DB_PORT=${{ secrets.DB_PORT }}
                         echo DB_USER=${{ secrets.DB_USER }}
                         echo DB_PASS=${{ secrets.DB_PASS }}
                         echo DB_TABLE=${{ secrets.DB_TABLE }}
+                        echo NODE_ENV=production
                     } > .env
 
             - name: Setup Node.js environment
