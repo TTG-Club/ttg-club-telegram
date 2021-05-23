@@ -216,13 +216,15 @@ export default class SpellActions extends Bot {
     }
 
     private resolveCallbackQuery(query: TelegramBot.CallbackQuery): void {
-        const chatId = query.from.id;
+        const chatId = query.message?.chat.id;
         const text = query.data;
         const match = text?.split(/\s/);
         const command = Array.isArray(match) && match.length ? match[0] : null;
         const param = Array.isArray(match) && match.length ? match[1] : null;
 
-        if (!command) return;
+        if (!chatId || !command) return;
+
+        console.log(query)
 
         switch (command) {
             case Commands.SPELL_BY_ID:
