@@ -26,7 +26,6 @@ jobs:
                         echo DB_USER=${{ secrets.DB_USER }}
                         echo DB_PASS=${{ secrets.DB_PASS }}
                         echo DB_TABLE=${{ secrets.DB_TABLE }}
-                        echo NODE_ENV=production
                     } > .env
 
             - name: Setup Node.js environment
