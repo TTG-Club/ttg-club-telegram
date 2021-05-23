@@ -11,6 +11,10 @@ export default class Bot {
     }
 
     private init(): void {
+        if (process.env.NODE_ENV === 'production') {
+            this.bot.sendMessage(process.env.TG_USER_ID, 'Я перезапустился! 👋🏻').then();
+        }
+
         this.setupBotListeners();
     }
 
