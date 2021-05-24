@@ -19,7 +19,7 @@ export default class Server {
         return new Promise(resolve => {
             this.app = express();
 
-            this.app.use(cors());
+            this.app.use(cors({ origin: true }));
             this.app.use(bodyParser.json());
             this.app.use(express.static(`${__dirname}${process.env.WEB_DIR}`))
 
