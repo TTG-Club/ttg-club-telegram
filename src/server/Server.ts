@@ -23,7 +23,7 @@ export default class Server {
             this.app.use(bodyParser.json());
             this.app.use(express.static(`${__dirname}${process.env.WEB_DIR}`))
 
-            this.app.listen(process.env.PORT, () => {
+            this.app.listen(Number(process.env.PORT), String(process.env.HOST), () => {
                 resolve(`Server started on port ${process.env.PORT}`)
             })
         })
