@@ -3,6 +3,7 @@ node_modules
 /dist
 /server
 /client
+/**/public_html
 yarn.lock
 
 # local env files

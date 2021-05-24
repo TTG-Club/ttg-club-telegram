@@ -18,6 +18,7 @@ jobs:
                     {
                         echo HOST=${{ secrets.SERVER_HOST }}
                         echo PORT=${{ secrets.SERVER_PORT }}
+                        echo WEB_DIR=${{ secrets.WEB_DIR }}
                         echo NTBA_FIX_319=${{ secrets.NTBA_FIX_319 }}
                         echo TG_TOKEN=${{ secrets.TG_TOKEN }}
                         echo TG_USER_ID=${{ secrets.TG_USER_ID }}

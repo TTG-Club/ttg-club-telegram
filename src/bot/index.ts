@@ -1,4 +1,4 @@
-import Bot from './Bot';
+import SpellAction from './actions/SpellActions';
 
 // eslint-disable-next-line no-new
-new Bot();
+new SpellAction();
