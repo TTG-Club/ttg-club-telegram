@@ -50,7 +50,11 @@ export default class Server {
 
             this.updateSpell(req.body.spell)
                 .then(response => {
-                    res.json(response)
+                    if (response) {
+                        res.json(response)
+                    } else {
+                        res.status(500).send('Can\'t find this spell')
+                    }
                 })
         });
     }
