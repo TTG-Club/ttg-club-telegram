@@ -72,6 +72,9 @@ export default class Server {
                 // eslint-disable-next-line prefer-promise-reject-errors
                 reject('Я не смог найти такое заклинание 😭')
             }
+        }).sort({
+            level: 1,
+            name: 1
         })
     })
 
