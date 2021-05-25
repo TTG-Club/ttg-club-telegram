@@ -50,7 +50,7 @@ export default class Server {
 
             this.updateSpell(req.body.spell)
                 .then(response => {
-                    console.log(response)
+                    res.json(response)
                 })
         });
     }
@@ -73,11 +73,14 @@ export default class Server {
 
     private updateSpell = (spell: DB.ISpell) => new Promise((resolve, reject) => {
         // eslint-disable-next-line no-underscore-dangle
-        Spell.findByIdAndUpdate(DBHelper.toObjectId(spell._id), spell, {}, (err, doc, res) => {
+        Spell.findByIdAndUpdate(DBHelper.toObjectId(spell._id), spell, {
+            useFindAndModify: false,
+            returnOriginal: false
+        }, (err, doc) => {
             if (err) {
                 reject(err)
             } else {
-                resolve(res)
+                resolve(doc)
             }
         })
     })
