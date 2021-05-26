@@ -5,6 +5,28 @@ import DB from '../../types/db';
 import { Spell } from '../../db/models/spells';
 import StringManipulation from '../../helpers/StringManipulation';
 import Commands from '../constants/Commands';
+import BotHelper from '../../helpers/BotHelper';
+import CallbackTypes from '../constants/CallbackTypes';
+import IBot from '../../types/bot';
+import ISpellQuery = IBot.ISpellQuery;
+
+function instanceOfSpell(spell: any): spell is DB.ISpell {
+    return 'name' in spell;
+}
+
+function instanceOfSpellList(list: any): list is DB.ISpell[] {
+    let status = true;
+
+    if (!Array.isArray(list) || !list.length) return false;
+
+    list.forEach((item: any) => {
+        if (!status) return;
+
+        if (!instanceOfSpell(item)) status = false;
+    });
+
+    return status
+}
 
 export default class SpellActions extends Bot {
     constructor() {
@@ -14,25 +36,14 @@ export default class SpellActions extends Bot {
     }
 
     private setupListeners() {
-        this.bot.onText(<RegExp>Bot.CommandRegExp(Commands.SPELL), (msg, match) => this.onSpell(msg, match));
-        this.bot.on('callback_query', query => this.resolveCallbackQuery(query))
+        this.bot.onText(<RegExp>BotHelper.commandRegExp(Commands.SPELL), (msg, match) => this.onSpell(msg, match));
+
+        this.emitter.on(CallbackTypes.SPELL_TYPE, query => {
+            this.resolveCallbackQuery(query)
+                .then(() => this.answerCallbackQuery(query.query.id))
+                .catch(() => this.answerServerError(query.chatId))
+        })
     }
-
-    private instanceOfSpellList = (list: any): list is DB.ISpell[] => {
-        let status = true;
-
-        if (!Array.isArray(list) || !list.length) return false;
-
-        list.forEach((item: any) => {
-            if (!status) return;
-
-            if (!this.instanceOfSpell(item)) status = false;
-        });
-
-        return status
-    }
-
-    private instanceOfSpell = (spell: any): spell is DB.ISpell => 'name' in spell;
 
     private onSpell(msg: TelegramBot.Message, match: RegExpExecArray | null): void {
         const chatId = msg.chat.id;
@@ -40,10 +51,19 @@ export default class SpellActions extends Bot {
         if (!DBHelper.isConnected()) {
             this.bot.sendMessage(chatId, 'Я потерял базу данных... 🤯 Скоро найду!')
                 .then();
+
+            return;
         }
 
-        if (!match || !match[1]) {
+        if (!match) {
             this.bot.sendMessage(chatId, 'Я не смог найти такое заклинание 😭')
+                .then();
+
+            return;
+        }
+
+        if (!match[1]) {
+            this.answerEmptyArgument(chatId)
                 .then();
 
             return;
@@ -53,14 +73,14 @@ export default class SpellActions extends Bot {
 
         if (spellName.length < 3) {
             this.bot.sendMessage(chatId, 'Слишком короткое название для заклинания.')
-                .then();
+                .then()
 
             return;
         }
 
         this.getSpellList(spellName)
             .then(res => {
-                if (this.instanceOfSpellList(res)) {
+                if (instanceOfSpellList(res)) {
                     const keyboard: TelegramBot.InlineKeyboardButton[][] = SpellActions.getSpellsKeyboard(res);
 
                     this.bot.sendMessage(chatId, 'Выбери более подходящий вариант', {
@@ -70,7 +90,7 @@ export default class SpellActions extends Bot {
                     }).then();
                 }
 
-                if (this.instanceOfSpell(res)) {
+                if (instanceOfSpell(res)) {
                     this.bot.sendMessage(chatId, SpellActions.getSpellMessage(res))
                         .then();
                 }
@@ -78,31 +98,41 @@ export default class SpellActions extends Bot {
             .catch(err => {
                 this.bot.sendMessage(chatId, err)
                     .then(() => {
-                        console.error(err)
-                    });
+                        console.error(err);
+                    })
             });
     }
 
-    private onSpellById(chatId: number, spellId: string): void {
-        if (!DBHelper.isConnected()) {
-            this.bot.sendMessage(chatId, 'Я потерял базу данных... 🤯 Скоро найду!')
-                .then();
-        }
+    private onSpellById(chatId: number, spellId: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!DBHelper.isConnected()) {
+                this.bot.sendMessage(chatId, 'Я потерял базу данных... 🤯 Скоро найду!')
+                    .then(() => reject())
+                    .catch(err => reject(err));
+            }
 
-        this.getSpellList(spellId, 'id')
-            .then(res => {
-                const instanceOfSpell = (spell: any): spell is DB.ISpell => 'name' in spell;
+            this.getSpellList(spellId, 'id')
+                .then(res => {
+                    if (instanceOfSpell(res)) {
+                        this.bot.sendMessage(chatId, SpellActions.getSpellMessage(res))
+                            .then(() => {
+                                resolve()
+                            })
+                            .catch(err => reject(err));
+                    } else {
+                        reject()
+                    }
+                })
+                .catch(err => {
+                    this.bot.sendMessage(chatId, err)
+                        .then(() => {
+                            console.error(err);
 
-                if (instanceOfSpell(res)) {
-                    this.bot.sendMessage(chatId, SpellActions.getSpellMessage(res)).then();
-                }
-            })
-            .catch(err => {
-                this.bot.sendMessage(chatId, err)
-                    .then(() => {
-                        console.error(err)
-                    });
-            });
+                            reject(err);
+                        })
+                        .catch(error => reject(error));
+                });
+        })
     }
 
     // eslint-disable-next-line max-len
@@ -212,7 +242,7 @@ export default class SpellActions extends Bot {
             const button: InlineKeyboardButton = {
                 text: spell.name,
                 // eslint-disable-next-line no-underscore-dangle
-                callback_data: `${Commands.SPELL_BY_ID} ${spell._id}`
+                callback_data: `${CallbackTypes.SPELL_TYPE} ${Commands.SPELL_BY_ID} ${spell._id}`
             };
 
             keyboard.push([button]);
@@ -221,22 +251,32 @@ export default class SpellActions extends Bot {
         return keyboard
     }
 
-    private resolveCallbackQuery(query: TelegramBot.CallbackQuery): void {
-        const chatId = query.message?.chat.id;
-        const text = query.data;
-        const match = text?.split(/\s/);
-        const command = Array.isArray(match) && match.length ? match[0] : null;
-        const param = Array.isArray(match) && match.length ? match[1] : null;
+    private resolveCallbackQuery(data: ISpellQuery): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const { chatId, command, argument } = data;
 
-        if (!chatId || !command) return;
+            if (!chatId || !command) {
+                reject();
 
-        switch (command) {
-            case Commands.SPELL_BY_ID:
-                if (param) this.onSpellById(chatId, param);
+                return;
+            }
 
-                break;
-            default:
-                break;
-        }
+            switch (command) {
+                case Commands.SPELL_BY_ID:
+                    if (argument) {
+                        this.onSpellById(chatId, argument)
+                            .then(() => resolve())
+                            .catch(err => reject(err));
+                    } else {
+                        reject();
+                    }
+
+                    break;
+                default:
+                    reject();
+
+                    break;
+            }
+        })
     }
 }

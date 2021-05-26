@@ -54,6 +54,8 @@ const spellSchema = new mongoose.Schema({
         type: String,
         required: false
     }
+}, {
+    collection: 'spells'
 });
 
 export const Spell = mongoose.model('Spell', spellSchema);
