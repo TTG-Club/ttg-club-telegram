@@ -32,9 +32,9 @@ jobs:
             - name: Setup Node.js environment
               uses: actions/setup-node@v2.1.5
               with:
-                node-version: '14.16.1'
-            - run: npm ci
-            - run: npm run build:prod
+                node-version: '14.17.0'
+            - run: yarn install
+            - run: yarn build:prod
 
             - name: Zip files
               run: zip -vr "dist" "." -X >/dev/null 2>&1
