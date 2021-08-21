@@ -58,6 +58,6 @@ const spellSchema = new mongoose.Schema({
     collection: 'spells'
 });
 
-export const Spell = mongoose.model('Spell', spellSchema);
+export const SpellModel = mongoose.model('Spell', spellSchema);
 
-export default { Spell }
+export default { SpellModel }

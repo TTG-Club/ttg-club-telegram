@@ -1,6 +1,12 @@
-import TelegramBot from 'node-telegram-bot-api';
+import { Scenes } from 'telegraf';
 
 declare namespace IBot {
+    interface ISceneSession extends Scenes.SceneSessionData {
+        mySceneSessionProp: number
+    }
+
+    type ISessionContext = Scenes.SceneContext<IBot.ISceneSession>
+
     interface ICommand {
         command: string,
         description: string,
@@ -9,13 +15,6 @@ declare namespace IBot {
 
     interface ICommands {
         [key: string]: ICommand
-    }
-
-    interface ISpellQuery {
-        chatId: number,
-        command: string,
-        argument: string
-        query: TelegramBot.CallbackQuery,
     }
 }
 

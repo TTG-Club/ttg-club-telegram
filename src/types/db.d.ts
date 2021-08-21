@@ -1,4 +1,4 @@
-declare namespace DB {
+declare namespace IDB {
     interface ISpell {
         readonly _id: string,
         readonly name: string,
@@ -16,4 +16,4 @@ declare namespace DB {
     }
 }
 
-export default DB
+export default IDB
