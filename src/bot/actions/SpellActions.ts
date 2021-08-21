@@ -33,10 +33,8 @@ export default class SpellActions {
             this.bot.action(new RegExp(`/${Commands.SPELL_BY_ID} (.+)`), async ctx => {
                 ctx.answerCbQuery();
 
-                console.log(ctx.match[1])
                 const spell = await SpellQueries.getSpellByID(ctx.match[1]);
 
-                console.log(spell);
                 const msg = SpellActions.formatSpellMessage(spell);
 
                 await ctx.replyWithHTML(msg);
