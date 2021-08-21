@@ -73,12 +73,13 @@ jobs:
                         rm -rf ./.github/ >/dev/null 2>&1
                         rm -rf ./dist.zip >/dev/null 2>&1
 
-#            - name: Deploy app
-#              uses: appleboy/ssh-action@v0.1.4
-#              with:
-#                host: ${{ secrets.REMOTE_HOST }}
-#                username: ${{ secrets.REMOTE_USER }}
-#                key: ${{ secrets.SERVER_SSH_KEY }}
-#                script: |
-#                    source ~/.bashrc
-#                    pm2 restart tg-bot >/dev/null 2>&1
+            - name: Deploy app
+              uses: appleboy/ssh-action@v0.1.4
+              with:
+                host: ${{ secrets.REMOTE_HOST }}
+                username: ${{ secrets.REMOTE_USER }}
+                key: ${{ secrets.SERVER_SSH_KEY }}
+                script: |
+                    source ~/.bashrc
+                    pm2 restart dnd-server >/dev/null 2>&1
+                    pm2 restart dnd-tg-bot >/dev/null 2>&1
