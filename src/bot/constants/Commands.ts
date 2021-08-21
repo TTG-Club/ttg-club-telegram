@@ -12,12 +12,12 @@ export default class Commands {
     static COMMANDS_LIST: IBot.ICommands = {
         [Commands.SPELL]: {
             command: Commands.SPELL,
-            description: 'поиск заклинания',
+            description: 'Поиск заклинания',
             fullDescription: `/${Commands.SPELL} <i>&lt;название&gt;</i> - Поиск заклинания по его названию.`
         },
         [Commands.HELP]: {
             command: Commands.HELP,
-            description: 'помощь',
+            description: 'Помощь',
             fullDescription: `/${Commands.HELP} - Описание команд.`
         }
     }

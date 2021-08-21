@@ -1,205 +1,52 @@
-import TelegramBot, { InlineKeyboardButton } from 'node-telegram-bot-api';
-import Bot from '../Bot';
-import DBHelper from '../../helpers/DBHelper';
-import DB from '../../types/db';
-import { Spell } from '../../db/models/spells';
-import StringManipulation from '../../helpers/StringManipulation';
+import { Markup, Telegraf } from 'telegraf';
+import { InlineKeyboardMarkup } from 'telegraf/src/core/types/typegram';
 import Commands from '../constants/Commands';
-import BotHelper from '../../helpers/BotHelper';
-import CallbackTypes from '../constants/CallbackTypes';
+import BotClass from '../BotClass';
 import IBot from '../../types/bot';
-import ISpellQuery = IBot.ISpellQuery;
+import IDB from '../../types/db';
+import StringManipulation from '../../helpers/StringManipulation';
+import SpellQueries from '../../db/queries/SpellQueries';
 
-function instanceOfSpell(spell: any): spell is DB.ISpell {
-    return 'name' in spell;
-}
+export default class SpellActions {
+    private readonly bot: Telegraf<IBot.ISessionContext>;
 
-function instanceOfSpellList(list: any): list is DB.ISpell[] {
-    let status = true;
-
-    if (!Array.isArray(list) || !list.length) return false;
-
-    list.forEach((item: any) => {
-        if (!status) return;
-
-        if (!instanceOfSpell(item)) status = false;
-    });
-
-    return status
-}
-
-export default class SpellActions extends Bot {
     constructor() {
-        super();
+        this.bot = BotClass.bot;
 
-        this.setupListeners();
+        this.registerCommands();
+        this.registerActions();
     }
 
-    private setupListeners() {
-        this.bot.onText(<RegExp>BotHelper.commandRegExp(Commands.SPELL), (msg, match) => this.onSpell(msg, match));
-
-        this.emitter.on(CallbackTypes.SPELL_TYPE, query => {
-            this.resolveCallbackQuery(query)
-                .then(() => this.answerCallbackQuery(query.query.id))
-                .catch(() => this.answerServerError(query.chatId))
-        })
-    }
-
-    private onSpell(msg: TelegramBot.Message, match: RegExpExecArray | null): void {
-        const chatId = msg.chat.id;
-
-        if (!DBHelper.isConnected()) {
-            this.bot.sendMessage(chatId, 'Я потерял базу данных... 🤯 Скоро найду!')
-                .then();
-
-            return;
-        }
-
-        if (!match) {
-            this.bot.sendMessage(chatId, 'Я не смог найти такое заклинание 😭')
-                .then();
-
-            return;
-        }
-
-        if (!match[1]) {
-            this.answerEmptyArgument(chatId)
-                .then();
-
-            return;
-        }
-
-        const spellName: string = match[1];
-
-        if (spellName.length < 3) {
-            this.bot.sendMessage(chatId, 'Слишком короткое название для заклинания.')
-                .then()
-
-            return;
-        }
-
-        this.getSpellList(spellName)
-            .then(res => {
-                if (instanceOfSpellList(res)) {
-                    const keyboard: TelegramBot.InlineKeyboardButton[][] = SpellActions.getSpellsKeyboard(res);
-
-                    this.bot.sendMessage(chatId, 'Выбери более подходящий вариант', {
-                        reply_markup: {
-                            inline_keyboard: keyboard
-                        }
-                    }).then();
-                }
-
-                if (instanceOfSpell(res)) {
-                    this.bot.sendMessage(chatId, SpellActions.getSpellMessage(res))
-                        .then();
-                }
+    private registerCommands() {
+        try {
+            this.bot.command(Commands.SPELL, async ctx => {
+                await ctx.scene.leave();
+                await ctx.scene.enter('findSpell');
             })
-            .catch(err => {
-                this.bot.sendMessage(chatId, err)
-                    .then(() => {
-                        console.error(err);
-                    })
-            });
+        } catch (err) {
+            throw new Error(err)
+        }
     }
 
-    private onSpellById(chatId: number, spellId: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            if (!DBHelper.isConnected()) {
-                this.bot.sendMessage(chatId, 'Я потерял базу данных... 🤯 Скоро найду!')
-                    .then(() => reject())
-                    .catch(err => reject(err));
-            }
+    private registerActions() {
+        try {
+            this.bot.action(new RegExp(`/${Commands.SPELL_BY_ID} (.+)`), async ctx => {
+                ctx.answerCbQuery();
 
-            this.getSpellList(spellId, 'id')
-                .then(res => {
-                    if (instanceOfSpell(res)) {
-                        this.bot.sendMessage(chatId, SpellActions.getSpellMessage(res))
-                            .then(() => {
-                                resolve()
-                            })
-                            .catch(err => reject(err));
-                    } else {
-                        reject()
-                    }
-                })
-                .catch(err => {
-                    this.bot.sendMessage(chatId, err)
-                        .then(() => {
-                            console.error(err);
+                console.log(ctx.match[1])
+                const spell = await SpellQueries.getSpellByID(ctx.match[1]);
 
-                            reject(err);
-                        })
-                        .catch(error => reject(error));
-                });
-        })
+                console.log(spell);
+                const msg = SpellActions.formatSpellMessage(spell);
+
+                await ctx.replyWithHTML(msg);
+            })
+        } catch (err) {
+            throw new Error(err)
+        }
     }
 
-    // eslint-disable-next-line max-len
-    private getSpellList = (value: string, field = 'name') => new Promise<string | DB.ISpell | DB.ISpell[]>((resolve, reject) => {
-        if (!value) {
-            // eslint-disable-next-line prefer-promise-reject-errors
-            reject('Название способности не указано');
-
-            return;
-        }
-
-        switch (field) {
-            case 'id':
-                Spell.findById(DBHelper.toObjectId(value), (err: any, res: DB.ISpell[]) => {
-                    if (err) {
-                        console.error(err);
-
-                        // eslint-disable-next-line prefer-promise-reject-errors
-                        reject('Произошла какая-то ошибка...');
-                    } else if (res) {
-                        resolve(res);
-                    } else {
-                        // eslint-disable-next-line prefer-promise-reject-errors
-                        reject('Я не смог найти такое заклинание 😭')
-                    }
-                }).sort({
-                    level: 1,
-                    name: 1
-                });
-
-                break;
-
-            default:
-                Spell.find({
-                    $or: [{
-                        name: new RegExp(value, 'i')
-                    }, {
-                        aliases: new RegExp(value, 'i')
-                    }]
-                }, (err: any, res: DB.ISpell[]) => {
-                    if (err) {
-                        console.error(err);
-
-                        reject(err);
-                    } else if (res.length === 1) {
-                        resolve(res[0]);
-                    } else if (res.length >= 1 && res.length <= 20) {
-                        resolve(res);
-                    } else if (res.length > 20) {
-                        // eslint-disable-next-line prefer-promise-reject-errors
-                        reject(
-                            `Я нашел слишком много заклинаний, где упоминается "${value}". Попробуй уточнить название.`
-                        );
-                    } else {
-                        // eslint-disable-next-line prefer-promise-reject-errors
-                        reject('Я не смог найти такое заклинание 😭')
-                    }
-                }).sort({
-                    level: 1,
-                    name: 1
-                });
-
-                break;
-        }
-    })
-
-    private static getSpellMessage(spell: DB.ISpell): string {
+    static formatSpellMessage = (spell: IDB.ISpell): string => {
         const spellLevel: string = 'level' in spell && spell.level ? `${spell.level} уровень` : 'Заговор';
 
         let reply = `${StringManipulation.capitalizeFirstLetter(spell.name)} (${spellLevel})\n`;
@@ -235,48 +82,8 @@ export default class SpellActions extends Bot {
         return reply
     }
 
-    private static getSpellsKeyboard(spells: DB.ISpell[]): TelegramBot.InlineKeyboardButton[][] {
-        const keyboard: TelegramBot.InlineKeyboardButton[][] = [];
-
-        spells.forEach(spell => {
-            const button: InlineKeyboardButton = {
-                text: spell.name,
-                // eslint-disable-next-line no-underscore-dangle
-                callback_data: `${CallbackTypes.SPELL_TYPE} ${Commands.SPELL_BY_ID} ${spell._id}`
-            };
-
-            keyboard.push([button]);
-        });
-
-        return keyboard
-    }
-
-    private resolveCallbackQuery(data: ISpellQuery): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const { chatId, command, argument } = data;
-
-            if (!chatId || !command) {
-                reject();
-
-                return;
-            }
-
-            switch (command) {
-                case Commands.SPELL_BY_ID:
-                    if (argument) {
-                        this.onSpellById(chatId, argument)
-                            .then(() => resolve())
-                            .catch(err => reject(err));
-                    } else {
-                        reject();
-                    }
-
-                    break;
-                default:
-                    reject();
-
-                    break;
-            }
-        })
-    }
+    static getSpellListMarkup = (spellList: IDB.ISpell[]): Markup.Markup<InlineKeyboardMarkup> => Markup.inlineKeyboard(
+        // eslint-disable-next-line no-underscore-dangle
+        spellList.map(spell => [Markup.button.callback(spell.name, `/${Commands.SPELL_BY_ID} ${spell._id}`)])
+    )
 }

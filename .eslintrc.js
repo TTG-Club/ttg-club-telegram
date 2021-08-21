@@ -18,7 +18,7 @@ module.exports = {
             120
         ],
         'consistent-return': [
-            1
+            0
         ],
         'comma-dangle': ['error', {
             arrays: 'only-multiline',

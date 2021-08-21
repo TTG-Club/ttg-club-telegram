@@ -1,17 +1,27 @@
 import express from 'express';
 import cors from 'cors';
 import * as bodyParser from 'body-parser';
-import { Spell } from '../db/models/spells';
-import DB from '../types/db';
-import DBHelper from '../helpers/DBHelper';
+import { SpellModel } from '../db/models/Spell.model';
+import IDB from '../types/db';
+import ISpell = IDB.ISpell;
+import DB from '../db';
+import SpellQueries from '../db/queries/SpellQueries';
 
 export default class Server {
     private app = express.application;
 
     constructor() {
-        this.init()
-            .then(() => {
-                this.setupRoutes();
+        DB.connect()
+            .then(async () => {
+                try {
+                    await this.init();
+                    this.setupRoutes();
+                } catch (err) {
+                    console.error(err)
+                }
+            })
+            .catch(err => {
+                throw err
             });
     }
 
@@ -31,13 +41,14 @@ export default class Server {
 
     private setupRoutes(): void {
         this.app.get('/spells', (req, res) => {
-            this.getAllSpells()
-                .then(response => {
-                    if (typeof response !== 'string') {
-                        res.json({
-                            spells: response
-                        })
-                    }
+            SpellQueries.getSpellList()
+                .then((response: ISpell[]) => {
+                    res.json({
+                        spells: response
+                    });
+                })
+                .catch(err => {
+                    res.status(500).send(err);
                 })
         });
 
@@ -59,28 +70,9 @@ export default class Server {
         });
     }
 
-    private getAllSpells = () => new Promise<string | DB.ISpell[]>((resolve, reject) => {
-        Spell.find({}, (err: any, res: DB.ISpell[]) => {
-            if (err) {
-                console.error(err);
-
-                // eslint-disable-next-line prefer-promise-reject-errors
-                reject('Произошла какая-то ошибка...');
-            } else if (res) {
-                resolve(res);
-            } else {
-                // eslint-disable-next-line prefer-promise-reject-errors
-                reject('Я не смог найти такое заклинание 😭')
-            }
-        }).sort({
-            level: 1,
-            name: 1
-        })
-    })
-
-    private updateSpell = (spell: DB.ISpell) => new Promise((resolve, reject) => {
+    private updateSpell = (spell: ISpell) => new Promise((resolve, reject) => {
         // eslint-disable-next-line no-underscore-dangle
-        Spell.findByIdAndUpdate(DBHelper.toObjectId(spell._id), spell, {
+        SpellModel.findByIdAndUpdate(DB.toObjectID(spell._id), spell, {
             useFindAndModify: false,
             returnOriginal: false
         }, (err, doc) => {

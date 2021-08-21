@@ -9,10 +9,13 @@ const { EnvironmentPlugin } = require('webpack');
 const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
-    entry: './src/index.ts',
+    entry: {
+        bot: path.resolve(__dirname, 'src', 'bot', 'index.ts'),
+        server: path.resolve(__dirname, 'src', 'server', 'index.ts'),
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'app.js',
+        filename: '[name].js',
     },
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
