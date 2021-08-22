@@ -46,10 +46,10 @@ jobs:
                     username: ${{ secrets.REMOTE_USER }}
                     key: ${{ secrets.SERVER_SSH_KEY }}
                     script: |
-                        pm2 stop dnd-tg-bot
-                        pm2 stop dnd-server
-                        rm -rf ${{ secrets.REMOTE_TARGET }}
-                        mkdir ${{ secrets.REMOTE_TARGET }}
+                        pm2 stop dnd-tg-bot >/dev/null 2>&1
+                        pm2 stop dnd-server >/dev/null 2>&1
+                        rm -rf ${{ secrets.REMOTE_TARGET }} >/dev/null 2>&1
+                        mkdir ${{ secrets.REMOTE_TARGET }} >/dev/null 2>&1
 
             -   name: Copy files
                 uses: easingthemes/ssh-deploy@v2.1.5
