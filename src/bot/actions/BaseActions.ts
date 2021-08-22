@@ -18,6 +18,7 @@ export default class BaseActions {
         try {
             this.onStart();
             this.onHelp();
+            this.onActions();
             await this.setCommandList();
         } catch (err) {
             throw new Error(err);
@@ -59,6 +60,14 @@ export default class BaseActions {
                 throw new Error(err);
             }
         })
+    }
+
+    private onActions() {
+        this.bot.action(new RegExp('.*'), async (ctx, next) => {
+            await ctx.answerCbQuery();
+
+            await next();
+        });
     }
 
     private async setCommandList() {

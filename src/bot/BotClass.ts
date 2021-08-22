@@ -4,6 +4,7 @@ import SpellActions from './actions/SpellActions';
 import scenes from './scenes';
 import IBot from '../types/bot';
 import DB from '../db';
+import DiceActions from './actions/DiceActions';
 
 export default class BotClass {
     static bot: Telegraf<IBot.IContext> = new Telegraf<IBot.IContext>(<string>process.env.TG_TOKEN);
@@ -11,6 +12,8 @@ export default class BotClass {
     private baseActions: BaseActions | undefined;
 
     private spellActions: SpellActions | undefined;
+
+    private diceActions: DiceActions | undefined;
 
     constructor() {
         DB.connect()
@@ -40,9 +43,7 @@ export default class BotClass {
     }
 
     private registerScenes = (): void => {
-        const stage = new Scenes.Stage<IBot.IContext>(scenes, {
-            ttl: 10
-        });
+        const stage = new Scenes.Stage<IBot.IContext>(scenes);
 
         BotClass.bot.use(session());
         BotClass.bot.use(stage.middleware());
@@ -61,6 +62,7 @@ export default class BotClass {
     private registerActions = (): void => {
         this.baseActions = new BaseActions();
         this.spellActions = new SpellActions();
+        this.diceActions = new DiceActions();
     }
 
     private gracefulStop = async (): Promise<void> => {

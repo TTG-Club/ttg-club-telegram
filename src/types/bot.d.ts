@@ -1,8 +1,11 @@
 import { Context, Scenes } from 'telegraf';
+import IDB from './db';
 
 declare namespace IBot {
     interface ISceneSession extends Scenes.SceneSessionData {
         sceneSessionProp: number
+        spellName: string
+        previousSpells: IDB.ISpell[]
     }
 
     interface ISession extends Scenes.SceneSession<IBot.ISceneSession> {

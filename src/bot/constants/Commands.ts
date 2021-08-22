@@ -5,6 +5,8 @@ export default class Commands {
 
     static SPELL_BY_ID = 'spellById'
 
+    static DICE = 'dice'
+
     static START = 'start'
 
     static HELP = 'help'
@@ -13,7 +15,12 @@ export default class Commands {
         [Commands.SPELL]: {
             command: Commands.SPELL,
             description: 'Поиск заклинания',
-            fullDescription: `/${Commands.SPELL} <i>&lt;название&gt;</i> - Поиск заклинания по его названию.`
+            fullDescription: `/${Commands.SPELL} - Поиск заклинания по его названию.`
+        },
+        [Commands.DICE]: {
+            command: Commands.DICE,
+            description: 'Бросить кубики',
+            fullDescription: `/${Commands.DICE} - Бросок кубиков.`
         },
         [Commands.HELP]: {
             command: Commands.HELP,

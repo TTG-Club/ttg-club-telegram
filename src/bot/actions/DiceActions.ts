@@ -3,7 +3,7 @@ import Commands from '../constants/Commands';
 import BotClass from '../BotClass';
 import IBot from '../../types/bot';
 
-export default class SpellActions {
+export default class DiceActions {
     private readonly bot: Telegraf<IBot.IContext>;
 
     constructor() {
@@ -14,9 +14,9 @@ export default class SpellActions {
 
     private registerCommands() {
         try {
-            this.bot.command(Commands.SPELL, async ctx => {
+            this.bot.command(Commands.DICE, async ctx => {
                 await ctx.scene.leave();
-                await ctx.scene.enter('findSpell');
+                await ctx.scene.enter('diceRoll');
             })
         } catch (err) {
             throw new Error(err)

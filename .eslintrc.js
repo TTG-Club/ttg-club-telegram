@@ -108,7 +108,10 @@ module.exports = {
                 ]
             }
         ],
-        'semi': 'off'
+        'semi': 'off',
+        'no-underscore-dangle': [
+            0
+        ]
     },
     overrides: [
         {
