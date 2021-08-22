@@ -8,7 +8,7 @@ import StringManipulation from '../../helpers/StringManipulation';
 import SpellQueries from '../../db/queries/SpellQueries';
 
 export default class SpellActions {
-    private readonly bot: Telegraf<IBot.ISessionContext>;
+    private readonly bot: Telegraf<IBot.IContext>;
 
     constructor() {
         this.bot = BotClass.bot;

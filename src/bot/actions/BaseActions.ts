@@ -5,7 +5,7 @@ import BotClass from '../BotClass';
 import IBot from '../../types/bot';
 
 export default class BaseActions {
-    private readonly bot: Telegraf<IBot.ISessionContext>;
+    private readonly bot: Telegraf<IBot.IContext>;
 
     constructor() {
         this.bot = BotClass.bot;

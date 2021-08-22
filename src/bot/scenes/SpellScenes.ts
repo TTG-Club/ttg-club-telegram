@@ -4,14 +4,16 @@ import SpellQueries from '../../db/queries/SpellQueries';
 import SpellActions from '../actions/SpellActions';
 
 export default class SpellScenes {
-    static findSpell(): Scenes.BaseScene<IBot.ISessionContext> {
-        const scene = new Scenes.BaseScene<IBot.ISessionContext>('findSpell');
+    static findSpell(): Scenes.BaseScene<IBot.IContext> {
+        const scene = new Scenes.BaseScene<IBot.IContext>('findSpell');
 
         scene.enter(async ctx => {
-            await ctx.reply('Введи название заклинания (минимум 3 буквы)')
+            await ctx.replyWithHTML(
+                'Введи название заклинания (минимум 3 буквы).\nЧтобы прервать выполнение введите <b>/exit</b>'
+            );
         });
 
-        scene.command('back', async ctx => {
+        scene.command('exit', async ctx => {
             await ctx.scene.leave();
         })
 
@@ -57,6 +59,10 @@ export default class SpellScenes {
                 }
             }
         });
+
+        scene.on('channel_post', async ctx => {
+            await ctx.reply('asd')
+        })
 
         scene.on('message', async ctx => {
             await ctx.reply('Это не похоже на название заклинания 🙃');

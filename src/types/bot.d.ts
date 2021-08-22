@@ -1,11 +1,19 @@
-import { Scenes } from 'telegraf';
+import { Context, Scenes } from 'telegraf';
 
 declare namespace IBot {
     interface ISceneSession extends Scenes.SceneSessionData {
-        mySceneSessionProp: number
+        sceneSessionProp: number
     }
 
-    type ISessionContext = Scenes.SceneContext<IBot.ISceneSession>
+    interface ISession extends Scenes.SceneSession<IBot.ISceneSession> {
+        sessionProp: number
+    }
+
+    interface IContext extends Context {
+        contextProp: string
+        session: ISession
+        scene: Scenes.SceneContextScene<IContext, ISceneSession>
+    }
 
     interface ICommand {
         command: string,

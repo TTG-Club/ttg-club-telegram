@@ -6,7 +6,7 @@ import IBot from '../types/bot';
 import DB from '../db';
 
 export default class BotClass {
-    static bot: Telegraf<IBot.ISessionContext> = new Telegraf<IBot.ISessionContext>(<string>process.env.TG_TOKEN);
+    static bot: Telegraf<IBot.IContext> = new Telegraf<IBot.IContext>(<string>process.env.TG_TOKEN);
 
     private baseActions: BaseActions | undefined;
 
@@ -40,7 +40,7 @@ export default class BotClass {
     }
 
     private registerScenes = (): void => {
-        const stage = new Scenes.Stage<IBot.ISessionContext>(scenes, {
+        const stage = new Scenes.Stage<IBot.IContext>(scenes, {
             ttl: 10
         });
 
@@ -48,7 +48,11 @@ export default class BotClass {
         BotClass.bot.use(stage.middleware());
         BotClass.bot.use((ctx, next) => {
             // eslint-disable-next-line no-param-reassign
-            ctx.scene.session.mySceneSessionProp ??= 0;
+            ctx.contextProp ??= '';
+            // eslint-disable-next-line no-param-reassign
+            ctx.session.sessionProp ??= 0;
+            // eslint-disable-next-line no-param-reassign
+            ctx.scene.session.sceneSessionProp ??= 0;
 
             return next()
         })
