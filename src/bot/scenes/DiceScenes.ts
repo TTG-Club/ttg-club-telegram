@@ -15,10 +15,11 @@ export default class DiceScenes {
         const scene = new Scenes.BaseScene<IBot.IContext>('diceRoll');
 
         scene.enter(async ctx => {
-            await ctx.replyWithHTML(
-                'Ты вошел в режим броска кубиков.\nВыбери кубик из списка:',
+            await ctx.reply('Ты вошел в режим броска кубиков.');
+            await ctx.reply(
+                'Выбери кубик из списка:',
                 DiceScenes.diceKeyboard()
-            )
+            );
         });
 
         scene.action(new RegExp('.*'), async (ctx, next) => {
@@ -31,9 +32,12 @@ export default class DiceScenes {
             const dice = ctx.match[1];
             const result = new DiceRoll(`d${dice}`);
 
-            await ctx.editMessageReplyMarkup(undefined);
-            await ctx.replyWithHTML(
-                `На кубике выпало: <b>${String(result.total)}</b>`,
+            await ctx.editMessageText(`Ты бросил кубик <b>d${dice}</b>. Результат: <b>${String(result.total)}</b>`, {
+                reply_markup: undefined,
+                parse_mode: 'HTML'
+            })
+            await ctx.reply(
+                'Ты можешь просить еще раз:',
                 DiceScenes.diceKeyboard()
             );
         })
