@@ -37,13 +37,13 @@ export default class DiceScenes {
                 parse_mode: 'HTML'
             })
             await ctx.reply(
-                'Ты можешь просить еще раз:',
+                'Ты можешь бросить еще раз:',
                 DiceScenes.diceKeyboard()
             );
         })
 
         scene.action(DiceScenes.ACTIONS.exitFromRoller, async ctx => {
-            await ctx.editMessageReplyMarkup(undefined);
+            await ctx.deleteMessage();
             await ctx.reply('Ты вышел из режима броска кубиков');
 
             await ctx.scene.leave();
