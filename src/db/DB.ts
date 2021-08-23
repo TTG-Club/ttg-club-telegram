@@ -8,6 +8,7 @@ export default class DB {
         mongoose.connect(`mongodb://${process.env.DB_HOST}:${process.env.DB_PORT}/`, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
+            useFindAndModify: false,
             user: process.env.DB_USER,
             pass: process.env.DB_PASS,
             dbName: process.env.DB_TABLE,

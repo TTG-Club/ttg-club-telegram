@@ -3,6 +3,7 @@ import { InlineKeyboardMarkup } from 'telegraf/src/core/types/typegram';
 import got from 'got';
 import * as HTMLParser from 'node-html-parser';
 import IBot from '../../types/bot';
+import MetricsQueries from '../../db/queries/MetricsQueries';
 
 export default class SpellScenes {
     static BASE_URL = 'https://dungeon.su'
@@ -51,7 +52,11 @@ export default class SpellScenes {
                     let spellList = [] as IBot.ISpell[];
 
                     if (grabResult.length > 0 && grabResult.length < 10) {
-                        spellList = await SpellScenes.parseGrabbedSpellList(grabResult)
+                        spellList = await SpellScenes.parseGrabbedSpellList(grabResult);
+
+                        if (!process.env.DEBUG_MODE || process.env.DEBUG_MODE !== 'true') {
+                            await MetricsQueries.checkAndUpdateTodayMetrics(ctx.message.from.id, spellList.length);
+                        }
                     }
 
                     if (spellList.length === 1) {
