@@ -15,12 +15,12 @@ export default class Commands {
         [Commands.SPELL]: {
             command: Commands.SPELL,
             description: 'Поиск заклинания',
-            fullDescription: `/${Commands.SPELL} - Поиск заклинания по его названию.`
+            fullDescription: `/${Commands.SPELL} - Команда для входа в режим поиска заклинаний.`
         },
         [Commands.DICE]: {
             command: Commands.DICE,
             description: 'Бросить кубики',
-            fullDescription: `/${Commands.DICE} - Бросок кубиков.`
+            fullDescription: `/${Commands.DICE} - Команда для входа в режим броска кубиков.`
         },
         [Commands.HELP]: {
             command: Commands.HELP,
