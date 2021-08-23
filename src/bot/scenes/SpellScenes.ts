@@ -1,12 +1,13 @@
 import { Markup, Scenes } from 'telegraf';
 import { InlineKeyboardMarkup } from 'telegraf/src/core/types/typegram';
-import SpellQueries from '../../db/queries/SpellQueries';
-import IDB from '../../types/db';
-import StringManipulation from '../../helpers/StringManipulation';
+import got from 'got';
+import * as HTMLParser from 'node-html-parser';
 import IBot from '../../types/bot';
 
 export default class SpellScenes {
-    static ACTIONS = {
+    static BASE_URL = 'https://dungeon.su'
+
+    private static ACTIONS = {
         findByID: 'FIND_BY_ID',
         showFounded: 'SHOW_FOUNDED',
         exitFromSearch: 'EXIT_FROM_SEARCH'
@@ -25,35 +26,41 @@ export default class SpellScenes {
         });
 
         scene.on('text', async ctx => {
-            if (!ctx.message || !('text' in ctx.message)) {
-                await ctx.reply(
-                    'Произошла какая-то ошибка...',
-                    Markup.inlineKeyboard([SpellScenes.EXIT_BUTTON])
-                );
+            try {
+                if (!ctx.message || !('text' in ctx.message)) {
+                    await ctx.reply(
+                        'Произошла какая-то ошибка...',
+                        Markup.inlineKeyboard([SpellScenes.EXIT_BUTTON])
+                    );
 
-                await ctx.scene.reenter();
-            } else if (ctx.message.text.length < 3) {
-                await ctx.reply(
-                    'Название слишком короткое',
-                    Markup.inlineKeyboard([SpellScenes.EXIT_BUTTON])
-                );
+                    await ctx.scene.reenter();
+                } else if (ctx.message.text.length < 3) {
+                    await ctx.reply(
+                        'Название слишком короткое',
+                        Markup.inlineKeyboard([SpellScenes.EXIT_BUTTON])
+                    );
 
-                await ctx.scene.reenter();
-            } else {
-                try {
+                    await ctx.scene.reenter();
+                } else {
                     // eslint-disable-next-line no-param-reassign
                     ctx.scene.session.spellName = ctx.message.text;
 
                     const { spellName } = ctx.scene.session;
-                    const spellList = await SpellQueries.getSpellListByName(spellName);
+                    const grabResult: HTMLParser.HTMLElement[] = await SpellScenes.grabSpellList(spellName);
+
+                    let spellList = [] as IBot.ISpell[];
+
+                    if (grabResult.length > 0 && grabResult.length < 10) {
+                        spellList = await SpellScenes.parseGrabbedSpellList(grabResult)
+                    }
 
                     if (spellList.length === 1) {
-                        const msg = SpellScenes.formatSpellMessage(spellList[0])
+                        const msg = SpellScenes.formatSpellMessage(spellList[0]);
 
                         await ctx.replyWithHTML(msg);
 
                         await ctx.scene.leave();
-                    } else if (spellList.length > 1 && spellList.length < 21) {
+                    } else if (spellList.length > 1 && spellList.length <= 10) {
                         // eslint-disable-next-line no-param-reassign
                         ctx.scene.session.previousSpells = spellList;
 
@@ -62,7 +69,7 @@ export default class SpellScenes {
                             `Я нашел несколько заклинаний, где упоминается "${spellName}".\nВыбери подходящее из этого списка:`,
                             SpellScenes.getSpellListMarkup(spellList)
                         );
-                    } else if (spellList.length > 20) {
+                    } else if (spellList.length > 10) {
                         await ctx.reply(`Я нашел слишком много заклинаний, где упоминается "${spellName}"...`);
 
                         await ctx.scene.reenter();
@@ -71,13 +78,13 @@ export default class SpellScenes {
 
                         await ctx.scene.reenter();
                     }
-                } catch (err) {
-                    console.error(err);
-
-                    await ctx.reply('Что-то пошло не так... попробуй запустить команду еще раз');
-
-                    await ctx.scene.leave();
                 }
+            } catch (err) {
+                console.error(err);
+
+                await ctx.reply('Что-то пошло не так... попробуй запустить команду еще раз');
+
+                await ctx.scene.leave();
             }
         });
 
@@ -89,10 +96,11 @@ export default class SpellScenes {
 
         scene.action(new RegExp(`^${SpellScenes.ACTIONS.findByID} (.+)`), async ctx => {
             const { previousSpells } = ctx.scene.session;
-            const spell = previousSpells.find(item => String(item._id) === ctx.match[1]) as IDB.ISpell;
+            const spell = previousSpells.find(item => String(item.name) === ctx.match[1]) as IBot.ISpell;
             const msg = SpellScenes.formatSpellMessage(spell);
 
-            await ctx.editMessageText(msg, Markup.inlineKeyboard([
+            await ctx.deleteMessage();
+            await ctx.replyWithHTML(msg, Markup.inlineKeyboard([
                 [Markup.button.callback('Вернуться к результатам', SpellScenes.ACTIONS.showFounded)],
                 SpellScenes.EXIT_BUTTON
             ]));
@@ -122,49 +130,87 @@ export default class SpellScenes {
         return scene;
     }
 
-    static formatSpellMessage = (spell: IDB.ISpell): string => {
-        const spellLevel: string = 'level' in spell && spell.level ? `${spell.level} уровень` : 'Заговор';
+    static formatSpellMessage = (spell: IBot.ISpell): string => {
+        const { el } = spell;
+        const params = el.querySelector('ul.params').querySelectorAll('li');
 
-        let reply = `${StringManipulation.capitalizeFirstLetter(spell.name)} (${spellLevel})\n`;
+        let reply = `<b>${el.querySelector('a.item-link').innerText}</b>`;
 
-        if ('source' in spell && spell.source) {
-            reply += `\nИсточник: ${spell.source};`;
+        for (let i = 0; i < params.length; i++) {
+            const li: HTMLParser.HTMLElement = params[i];
+
+            if (li.classList.contains('size-type-alignment')) {
+                reply += `\n<i>${li.innerText}</i>\n`;
+            } else if (li.classList.contains('subsection') && li.classList.contains('desc')) {
+                const paragraphs = li.querySelectorAll('p');
+
+                reply += '\n';
+
+                for (let i1 = 0; i1 < paragraphs.length; i1++) {
+                    const p = paragraphs[i1];
+
+                    reply += `\n${p.innerText}`;
+                }
+            } else {
+                const label = li.querySelector('strong');
+
+                if (label) {
+                    reply += `\n<b>${label.innerText}</b> ${li.innerText.replace(label.innerText, '').trim()}`;
+                }
+            }
         }
 
-        if ('school' in spell && spell.school) {
-            reply += `\nШкола: ${spell.school};`;
-        }
-
-        if ('castingTime' in spell && spell.castingTime) {
-            reply += `\nВремя применения: ${spell.castingTime};`;
-        }
-
-        if ('duration' in spell && spell.duration) {
-            reply += `\nДлительность: ${spell.duration};`;
-        }
-
-        if ('range' in spell && spell.range) {
-            reply += `\nДальность: ${spell.range};\n`;
-        }
-
-        if ('materials' in spell && spell.materials) {
-            reply += `\nМатериалы: ${spell.materials};\n`;
-        }
-
-        if ('text' in spell && spell.text) {
-            reply += `\n${spell.text}`;
-        }
+        reply += `\n\n<b>Источник:</b> ${spell.url}`
 
         return reply
     }
 
-    static getSpellListMarkup = (spellList: IDB.ISpell[]): Markup.Markup<InlineKeyboardMarkup> => {
+    static getSpellListMarkup = (spellList: IBot.ISpell[]): Markup.Markup<InlineKeyboardMarkup> => {
         // eslint-disable-next-line max-len
-        const spellButtons = spellList.map(spell => [Markup.button.callback(spell.name, `${SpellScenes.ACTIONS.findByID} ${spell._id}`)]);
+        const spellButtons = spellList.map(spell => [Markup.button.callback(spell.name, `${SpellScenes.ACTIONS.findByID} ${spell.name}`)]);
 
         return Markup.inlineKeyboard([
             ...spellButtons,
             SpellScenes.EXIT_BUTTON
         ]);
+    }
+
+    static grabSpellList = async (spellName: string): Promise<HTMLParser.HTMLElement[]> => {
+        const url = `${ SpellScenes.BASE_URL }/spells/level/`;
+        const response = await got.get(url);
+        const dom = HTMLParser.parse(response.body);
+        const container = dom.querySelector('.list-of-items')
+        const spellLinks = container.querySelectorAll('a');
+
+        return spellLinks.filter(spell => spell.innerText.match(new RegExp(spellName, 'gi')));
+    }
+
+    static parseGrabbedSpellList = async (list: HTMLParser.HTMLElement[]): Promise<IBot.ISpell[]> => {
+        const spellList = [] as IBot.ISpell[];
+
+        for (const element of list) {
+            const url: string | undefined = element.getAttribute('href')
+                ? `${ SpellScenes.BASE_URL }${ element.getAttribute('href') }`
+                : undefined;
+
+            if (url) {
+                const el = await SpellScenes.grabSpellInfo(url);
+
+                spellList.push({
+                    name: element.innerText,
+                    url,
+                    el
+                })
+            }
+        }
+
+        return spellList
+    }
+
+    static grabSpellInfo = async (url: string): Promise<HTMLParser.HTMLElement> => {
+        const response = await got.get(url);
+        const dom = HTMLParser.parse(response.body);
+
+        return dom.querySelector('.paper-1.card');
     }
 }

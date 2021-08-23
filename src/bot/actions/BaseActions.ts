@@ -3,6 +3,7 @@ import { Telegraf } from 'telegraf';
 import Commands from '../constants/Commands';
 import BotClass from '../BotClass';
 import IBot from '../../types/bot';
+import SpellScenes from '../scenes/SpellScenes';
 
 export default class BaseActions {
     private readonly bot: Telegraf<IBot.IContext>;
@@ -55,7 +56,9 @@ export default class BaseActions {
                     msg += `${index === 0 ? '\n' : ''}\n${Commands.COMMANDS_LIST[cmd.command].fullDescription}`;
                 });
 
-                await ctx.replyWithMarkdownV2(msg, { parse_mode: 'HTML' });
+                msg += `\n\n<b>Источник заклинаний:</b> ${ SpellScenes.BASE_URL }`
+
+                await ctx.replyWithHTML(msg);
             } catch (err) {
                 throw new Error(err);
             }
