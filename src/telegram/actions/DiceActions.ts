@@ -1,13 +1,13 @@
 import { Telegraf } from 'telegraf';
 import Commands from '../constants/Commands';
-import BotClass from '../BotClass';
+import TelegramBot from '../TelegramBot';
 import IBot from '../../types/bot';
 
 export default class DiceActions {
     private readonly bot: Telegraf<IBot.IContext>;
 
     constructor() {
-        this.bot = BotClass.bot;
+        this.bot = TelegramBot.bot;
 
         this.registerCommands();
     }

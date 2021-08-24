@@ -9,13 +9,10 @@ const { EnvironmentPlugin } = require('webpack');
 const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
-    entry: {
-        'telegram-bot': path.resolve(__dirname, 'src', 'telegram', 'TelegramBot.ts'),
-        'discord-bot': path.resolve(__dirname, 'src', 'discord', 'DiscordBot.ts'),
-    },
+    entry: path.resolve(__dirname, 'src', 'discord', 'DiscordBot.ts'),
     output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: '[name].js',
+        path: path.resolve(__dirname, 'dist', 'discord-bot'),
+        filename: 'discord-bot.js',
     },
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
@@ -62,6 +59,8 @@ module.exports = {
             ...dotenv.parsed
         }),
         new NodePolyfillPlugin(),
-        new NodemonPlugin()
+        new NodemonPlugin({
+            watch: path.resolve(__dirname, 'dist', 'discord-bot')
+        })
     ],
 };

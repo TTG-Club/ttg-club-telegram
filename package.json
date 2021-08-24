@@ -2,12 +2,12 @@
     "name": "tg-bot-server",
     "description": "The server for telegram bot",
     "version": "0.1.0",
-    "main": "dist/app.js",
     "author": "Nikita Charushin <svifty7@gmail.com>",
     "license": "MIT",
     "private": true,
     "scripts": {
-        "watch": "webpack --watch --env NODE_ENV=development",
+        "watch:telegram": "webpack --config webpack.telegram.config.js --watch --env NODE_ENV=development",
+        "watch:discord": "webpack --config webpack.discord.config.js --watch --env NODE_ENV=development",
         "build:prod": "webpack --env NODE_ENV=production",
         "lint": "eslint 'src/**/*.{js,ts}'"
     },
@@ -15,6 +15,7 @@
         "body-parser": "^1.19.0",
         "bson": "^1.1.6",
         "cors": "^2.8.5",
+        "discord.js": "^13.1.0",
         "express": "^4.17.1",
         "got": "^11.8.2",
         "lodash": "^4.17.21",
@@ -53,11 +54,11 @@
         "webpack-node-externals": "^3.0.0"
     },
     "engines": {
-        "node": "^14.16.1"
+        "node": "^16.7.0"
     },
     "husky": {
         "hooks": {
-            "pre-commit": "npm run lint"
+            "pre-commit": "yarn run lint"
         }
     }
 }
