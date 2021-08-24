@@ -182,7 +182,7 @@ export default class SpellScenes {
 
     static grabSpellList = async (spellName: string): Promise<HTMLParser.HTMLElement[]> => {
         const url = `${ SpellScenes.BASE_URL }/spells/level/`;
-        const response = await got.get(url);
+        const response = await got.get(url, { searchParams: { partner: 'svifty7' }});
         const dom = HTMLParser.parse(response.body);
         const container = dom.querySelector('.list-of-items')
         const spellLinks = container.querySelectorAll('a');
@@ -213,7 +213,7 @@ export default class SpellScenes {
     }
 
     static grabSpellInfo = async (url: string): Promise<HTMLParser.HTMLElement> => {
-        const response = await got.get(url);
+        const response = await got.get(url, { searchParams: { partner: 'svifty7' }});
         const dom = HTMLParser.parse(response.body);
 
         return dom.querySelector('.paper-1.card');
