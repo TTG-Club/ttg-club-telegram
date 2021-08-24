@@ -32,7 +32,7 @@ jobs:
             -   name: Setup Node.js environment
                 uses: actions/setup-node@v2.1.5
                 with:
-                    node-version: '14.17.0'
+                    node-version: '16.7.0'
             -   run: yarn install
             -   run: yarn build:prod
 
