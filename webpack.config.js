@@ -11,7 +11,6 @@ const nodeExternals = require('webpack-node-externals');
 module.exports = {
     entry: {
         'telegram-bot': path.resolve(__dirname, 'src', 'telegram', 'TelegramBot.ts'),
-        'discord-bot': path.resolve(__dirname, 'src', 'discord', 'DiscordBot.ts'),
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
