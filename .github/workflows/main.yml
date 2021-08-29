@@ -11,69 +11,7 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            -   uses: actions/checkout@v2
-
-            -   name: Create .env
-                run: |
-                    {
-                        echo HOST=${{ secrets.SERVER_HOST }}
-                        echo PORT=${{ secrets.SERVER_PORT }}
-                        echo WEB_DIR=${{ secrets.WEB_DIR }}
-                        echo NTBA_FIX_319=${{ secrets.NTBA_FIX_319 }}
-                        echo TG_TOKEN=${{ secrets.TG_TOKEN }}
-                        echo TG_USER_ID=${{ secrets.TG_USER_ID }}
-                        echo DB_HOST=${{ secrets.DB_HOST }}
-                        echo DB_PORT=${{ secrets.DB_PORT }}
-                        echo DB_USER=${{ secrets.DB_USER }}
-                        echo DB_PASS=${{ secrets.DB_PASS }}
-                        echo DB_TABLE=${{ secrets.DB_TABLE }}
-                    } > .env
-
-            -   name: Setup Node.js environment
-                uses: actions/setup-node@v2.1.5
-                with:
-                    node-version: '16.7.0'
-            -   run: yarn install
-            -   run: yarn build:prod
-
-            -   name: Zip files
-                run: zip -vr "dist" "." -X >/dev/null 2>&1
-
-            -   name: Cleanup remote
-                uses: appleboy/ssh-action@v0.1.4
-                with:
-                    host: ${{ secrets.REMOTE_HOST }}
-                    username: ${{ secrets.REMOTE_USER }}
-                    key: ${{ secrets.SERVER_SSH_KEY }}
-                    script: |
-                        pm2 stop dnd-tg-bot >/dev/null 2>&1
-                        pm2 stop dnd-server >/dev/null 2>&1
-                        rm -rf ${{ secrets.REMOTE_TARGET }} >/dev/null 2>&1
-                        mkdir ${{ secrets.REMOTE_TARGET }} >/dev/null 2>&1
-
-            -   name: Copy files
-                uses: easingthemes/ssh-deploy@v2.1.5
-                env:
-                    SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
-                    ARGS: "-rltgoDzvO --delete"
-                    SOURCE: "./dist.zip"
-                    REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-                    REMOTE_USER: ${{ secrets.REMOTE_USER }}
-                    TARGET: ${{ secrets.REMOTE_TARGET }}
-                    EXCLUDE: ""
-
-            -   name: Unzip files
-                uses: appleboy/ssh-action@v0.1.4
-                with:
-                    host: ${{ secrets.REMOTE_HOST }}
-                    username: ${{ secrets.REMOTE_USER }}
-                    key: ${{ secrets.SERVER_SSH_KEY }}
-                    script: |
-                        cd ${{ secrets.REMOTE_TARGET }}
-                        unzip "dist.zip" >/dev/null 2>&1
-                        rm -rf ./.git/ >/dev/null 2>&1
-                        rm -rf ./.github/ >/dev/null 2>&1
-                        rm -rf ./dist.zip >/dev/null 2>&1
+            - uses: actions/checkout@v2
 
             - name: Deploy app
               uses: appleboy/ssh-action@v0.1.4
@@ -83,5 +21,7 @@ jobs:
                 key: ${{ secrets.SERVER_SSH_KEY }}
                 script: |
                     source ~/.bashrc
-                    pm2 restart dnd-server >/dev/null 2>&1
-                    pm2 restart dnd-tg-bot >/dev/null 2>&1
+                    cd ${{ secrets.REMOTE_TARGET }}
+                    git pull
+                    yarn install
+                    yarn build:prod

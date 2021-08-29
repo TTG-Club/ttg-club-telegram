@@ -6,7 +6,7 @@ import IBot from '../types/bot';
 import DB from '../db';
 import DiceActions from './actions/DiceActions';
 
-export default class BotClass {
+export default class TelegramBot {
     static bot: Telegraf<IBot.IContext> = new Telegraf<IBot.IContext>(<string>process.env.TG_TOKEN);
 
     private baseActions: BaseActions | undefined;
@@ -36,7 +36,7 @@ export default class BotClass {
 
             await this.gracefulStop();
 
-            await BotClass.bot.launch();
+            await TelegramBot.bot.launch();
         } catch (err) {
             throw new Error(err);
         }
@@ -45,9 +45,9 @@ export default class BotClass {
     private registerScenes = (): void => {
         const stage = new Scenes.Stage<IBot.IContext>(scenes);
 
-        BotClass.bot.use(session());
-        BotClass.bot.use(stage.middleware());
-        BotClass.bot.use((ctx, next) => {
+        TelegramBot.bot.use(session());
+        TelegramBot.bot.use(stage.middleware());
+        TelegramBot.bot.use((ctx, next) => {
             // eslint-disable-next-line no-param-reassign
             ctx.contextProp ??= '';
             // eslint-disable-next-line no-param-reassign
@@ -68,14 +68,17 @@ export default class BotClass {
     private gracefulStop = async (): Promise<void> => {
         try {
             process.once('SIGINT', async () => {
-                await BotClass.bot.stop('SIGINT');
+                await TelegramBot.bot.stop('SIGINT');
             });
 
             process.once('SIGTERM', async () => {
-                await BotClass.bot.stop('SIGTERM');
+                await TelegramBot.bot.stop('SIGTERM');
             });
         } catch (err) {
             throw new Error(err)
         }
     }
 }
+
+// eslint-disable-next-line no-new
+new TelegramBot();

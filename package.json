@@ -2,12 +2,11 @@
     "name": "tg-bot-server",
     "description": "The server for telegram bot",
     "version": "0.1.0",
-    "main": "dist/app.js",
     "author": "Nikita Charushin <svifty7@gmail.com>",
     "license": "MIT",
     "private": true,
     "scripts": {
-        "watch": "webpack --watch --env NODE_ENV=development",
+        "watch:telegram": "webpack --config webpack.telegram.config.js --watch --env NODE_ENV=development",
         "build:prod": "webpack --env NODE_ENV=production",
         "lint": "eslint 'src/**/*.{js,ts}'"
     },
@@ -57,7 +56,7 @@
     },
     "husky": {
         "hooks": {
-            "pre-commit": "npm run lint"
+            "pre-commit": "yarn run lint"
         }
     }
 }
