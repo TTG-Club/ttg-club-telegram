@@ -6,7 +6,7 @@
     "license": "MIT",
     "private": true,
     "scripts": {
-        "watch:telegram": "webpack --config webpack.telegram.config.js --watch --env NODE_ENV=development",
+        "watch:telegram": "webpack --watch --env NODE_ENV=development",
         "build:prod": "webpack --env NODE_ENV=production",
         "lint": "eslint 'src/**/*.{js,ts}'"
     },

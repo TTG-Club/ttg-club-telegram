@@ -36,7 +36,13 @@ export default class TelegramBot {
 
             await this.gracefulStop();
 
-            await TelegramBot.bot.launch();
+            await TelegramBot.bot.launch()
+                .then(async () => {
+                    if (!process.env.DEBUG_MODE || process.env.DEBUG_MODE !== 'true') {
+                        await TelegramBot.bot.telegram
+                            .sendMessage(<string>process.env.TG_USER_ID, 'Я готов к работе 🙃')
+                    }
+                });
         } catch (err) {
             throw new Error(err);
         }
