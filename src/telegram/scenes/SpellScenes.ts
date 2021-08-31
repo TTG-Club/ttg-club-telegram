@@ -104,11 +104,13 @@ export default class SpellScenes {
             const spell = previousSpells.find(item => String(item.name) === ctx.match[1]) as IBot.ISpell;
             const msg = SpellScenes.formatSpellMessage(spell);
 
-            await ctx.deleteMessage();
-            await ctx.replyWithHTML(msg, Markup.inlineKeyboard([
-                [Markup.button.callback('Вернуться к результатам', SpellScenes.ACTIONS.showFounded)],
-                SpellScenes.EXIT_BUTTON
-            ]));
+            await ctx.editMessageText(msg, {
+                parse_mode: 'HTML',
+                ...Markup.inlineKeyboard([
+                    [Markup.button.callback('Вернуться к результатам', SpellScenes.ACTIONS.showFounded)],
+                    SpellScenes.EXIT_BUTTON
+                ])
+            });
         });
 
         scene.action(SpellScenes.ACTIONS.showFounded, async ctx => {
@@ -129,6 +131,7 @@ export default class SpellScenes {
 
         scene.on('message', async ctx => {
             await ctx.reply('Это не похоже на название заклинания 🙃');
+
             await ctx.scene.reenter();
         })
 
@@ -171,8 +174,8 @@ export default class SpellScenes {
     }
 
     static getSpellListMarkup = (spellList: IBot.ISpell[]): Markup.Markup<InlineKeyboardMarkup> => {
-        // eslint-disable-next-line max-len
-        const spellButtons = spellList.map(spell => [Markup.button.callback(spell.name, `${SpellScenes.ACTIONS.findByID} ${spell.name}`)]);
+        const spellButtons = spellList
+            .map(spell => [Markup.button.callback(spell.name, `${SpellScenes.ACTIONS.findByID} ${spell.name}`)]);
 
         return Markup.inlineKeyboard([
             ...spellButtons,
