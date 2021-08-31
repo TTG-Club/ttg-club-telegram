@@ -29,17 +29,11 @@ export default class SpellScenes {
         scene.on('text', async ctx => {
             try {
                 if (!ctx.message || !('text' in ctx.message)) {
-                    await ctx.reply(
-                        'Произошла какая-то ошибка...',
-                        Markup.inlineKeyboard([SpellScenes.EXIT_BUTTON])
-                    );
+                    await ctx.reply('Произошла какая-то ошибка...');
 
                     await ctx.scene.reenter();
                 } else if (ctx.message.text.length < 3) {
-                    await ctx.reply(
-                        'Название слишком короткое',
-                        Markup.inlineKeyboard([SpellScenes.EXIT_BUTTON])
-                    );
+                    await ctx.reply('Название слишком короткое');
 
                     await ctx.scene.reenter();
                 } else {
