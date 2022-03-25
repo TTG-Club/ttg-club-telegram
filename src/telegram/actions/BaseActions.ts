@@ -1,35 +1,34 @@
 import _ from 'lodash';
-import { Telegraf } from 'telegraf';
-import Commands from '../constants/Commands';
-import TelegramBot from '../TelegramBot';
-import IBot from '../../types/bot';
-import SpellScenes from '../scenes/SpellScenes';
+import {
+    Composer,
+    Markup
+} from 'telegraf';
+import { TelegrafContext } from 'telegraf/typings/context';
+import { COMMANDS_LIST } from '../constants/Commands';
+import IBot from '../../../typings/TelegramBot';
+import TContext = IBot.TContext;
 
 export default class BaseActions {
-    private readonly bot: Telegraf<IBot.IContext>;
+    private bot = new Composer<TContext>();
 
-    constructor() {
-        this.bot = TelegramBot.bot;
+    public registerCommands() {
+        this.onStart();
+        this.onHelp();
+        this.onActions();
 
-        this.registerBaseCommands()
-            .then();
-    }
-
-    private async registerBaseCommands() {
-        try {
-            this.onStart();
-            this.onHelp();
-            this.onActions();
-            await this.setCommandList();
-        } catch (err) {
-            throw new Error(err);
-        }
+        return this.bot;
     }
 
     private onStart() {
         this.bot.start(async ctx => {
             try {
-                await ctx.reply('Приветствую, искатель приключений! 👋🏻')
+                await ctx.reply('Приветствую, искатель приключений! 👋🏻', {
+                    reply_markup: Markup.inlineKeyboard(
+                        [[
+                            Markup.callbackButton('Список команд', 'baseHelp')
+                        ]]
+                    )
+                })
             } catch (err) {
                 throw new Error(err)
             }
@@ -37,53 +36,35 @@ export default class BaseActions {
     }
 
     private onHelp() {
-        this.bot.help(async ctx => {
+        const helpResponse = async (ctx: TelegrafContext) => {
             try {
-                const registeredCommands = await this.bot.telegram.getMyCommands();
-                const commandsExist = !!registeredCommands
-                    && Array.isArray(registeredCommands)
-                    && !!registeredCommands.length;
+                const defaultCommands = _.cloneDeep(COMMANDS_LIST);
+                const modifiedList = Object.values(defaultCommands).map(item => (
+                    `${ COMMANDS_LIST[item.command].fullDescription }`
+                ))
 
-                if (!commandsExist) {
-                    await ctx.reply('Список команд пока недоступен... скорее всего произошла какая-то ошибка');
+                let msg = '<b>Список доступных команд:</b>\n';
 
-                    return;
-                }
-
-                let msg = '<b>Список доступных команд:</b>';
-
-                registeredCommands.forEach((cmd, index) => {
-                    msg += `${index === 0 ? '\n' : ''}\n${Commands.COMMANDS_LIST[cmd.command].fullDescription}`;
+                modifiedList.forEach((cmd: string) => {
+                    msg += `\n${cmd}`;
                 });
-
-                msg += `\n\n<b>Источник заклинаний:</b> ${ SpellScenes.BASE_URL }`
 
                 await ctx.replyWithHTML(msg);
             } catch (err) {
                 throw new Error(err);
             }
-        })
+        }
+
+        this.bot.action('baseHelp', async ctx => helpResponse(ctx));
+
+        this.bot.help(async ctx => helpResponse(ctx));
     }
 
     private onActions() {
-        this.bot.action(new RegExp('.*'), async (ctx, next) => {
+        this.bot.action(/.*/, async (ctx, next) => {
             await ctx.answerCbQuery();
 
             await next();
         });
-    }
-
-    private async setCommandList() {
-        try {
-            const defaultCommands = _.cloneDeep(Commands.COMMANDS_LIST);
-            const modifiedList = Object.values(defaultCommands).map(item => ({
-                command: item.command,
-                description: item.description
-            }));
-
-            await this.bot.telegram.setMyCommands(modifiedList);
-        } catch (err) {
-            throw new Error(err);
-        }
     }
 }

@@ -20,7 +20,7 @@ module.exports = {
         'consistent-return': [
             0
         ],
-        'comma-dangle': ['error', {
+        'comma-dangle': [ 'error', {
             arrays: 'only-multiline',
             objects: 'only-multiline',
             imports: 'only-multiline',
@@ -31,7 +31,7 @@ module.exports = {
             2,
             'as-needed'
         ],
-        'object-curly-spacing': ['error', 'always', {
+        'object-curly-spacing': [ 'error', 'always', {
             objectsInObjects: false
         }],
         'quote-props': [
@@ -92,7 +92,7 @@ module.exports = {
             'LabeledStatement',
             'WithStatement'
         ],
-        'space-before-function-paren': [2, {
+        'space-before-function-paren': [ 2, {
             anonymous: 'never',
             named: 'never',
             asyncArrow: 'always'
@@ -111,11 +111,21 @@ module.exports = {
         'semi': 'off',
         'no-underscore-dangle': [
             0
-        ]
+        ],
+        'array-bracket-spacing': [
+            'error',
+            'always',
+            {
+                singleValue: true,
+                objectsInArrays: false,
+                arraysInArrays: false
+            }
+        ],
+        'class-methods-use-this': 'off'
     },
     overrides: [
         {
-            files: ['**/*.ts', '**/*.tsx'],
+            files: [ '**/*.ts', '**/*.tsx' ],
             env: {
                 browser: true,
                 es6: true,
@@ -140,8 +150,10 @@ module.exports = {
                 // https://github.com/typescript-eslint/typescript-eslint/issues/967
                 createDefaultProgram: true
             },
-            plugins: ['@typescript-eslint'],
+            plugins: [ '@typescript-eslint' ],
             rules: {
+                'no-shadow': 'off',
+                '@typescript-eslint/no-shadow': [ 'error' ],
                 '@typescript-eslint/no-explicit-any': [
                     0
                 ],

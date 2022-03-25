@@ -1,25 +1,17 @@
-import { Telegraf } from 'telegraf';
-import Commands from '../constants/Commands';
-import TelegramBot from '../TelegramBot';
-import IBot from '../../types/bot';
+import { Composer } from 'telegraf';
+import { COMMAND_NAME } from '../constants/Commands';
+import IBot from '../../../typings/TelegramBot';
+import TContext = IBot.TContext;
 
 export default class DiceActions {
-    private readonly bot: Telegraf<IBot.IContext>;
+    private bot = new Composer<TContext>();
 
-    constructor() {
-        this.bot = TelegramBot.bot;
+    public registerCommands() {
+        this.bot.command(COMMAND_NAME.DICE, async ctx => {
+            await ctx.scene.leave();
+            await ctx.scene.enter('diceRoll');
+        });
 
-        this.registerCommands();
-    }
-
-    private registerCommands() {
-        try {
-            this.bot.command(Commands.DICE, async ctx => {
-                await ctx.scene.leave();
-                await ctx.scene.enter('diceRoll');
-            })
-        } catch (err) {
-            throw new Error(err)
-        }
+        return this.bot;
     }
 }

@@ -1,78 +1,83 @@
-import { DiceRoll } from 'rpg-dice-roller';
-import { Markup, Scenes } from 'telegraf';
-import { InlineKeyboardMarkup, InlineKeyboardButton } from 'telegraf/src/core/types/typegram';
-import IBot from '../../types/bot';
+import { DiceRoll } from '@dice-roller/rpg-dice-roller';
+import { BaseScene, Markup } from 'telegraf';
+import { SceneContextMessageUpdate } from 'telegraf/typings/stage';
+import { Button } from 'telegraf/typings/markup';
 
+enum ACTIONS {
+    ExitFromRoller = 'Закончить броски',
+}
 export default class DiceScenes {
-    static ACTIONS = {
-        exitFromRoller: 'EXIT_FROM_ROLLER',
-        rollDice: 'ROLL_DICE'
-    }
+    EXIT_BUTTON: Button[] = [ Markup.button(ACTIONS.ExitFromRoller) ];
 
-    static EXIT_BUTTON = [Markup.button.callback('Закончить броски', DiceScenes.ACTIONS.exitFromRoller)];
+    public diceRoll() {
+        const scene = new BaseScene('diceRoll');
 
-    static diceRoll(): Scenes.BaseScene<IBot.IContext> {
-        const scene = new Scenes.BaseScene<IBot.IContext>('diceRoll');
-
-        scene.enter(async ctx => {
-            await ctx.reply('Ты вошел в режим броска кубиков.');
+        scene.enter(async (ctx: SceneContextMessageUpdate) => {
             await ctx.reply(
-                'Выбери кубик из списка:',
-                DiceScenes.diceKeyboard()
+                'Ты вошел в режим броска кубиков.\nВыбирай кубик на клавиатуре и вперед!',
+                this.diceKeyboard()
             );
         });
 
-        scene.action(new RegExp('.*'), async (ctx, next) => {
-            await ctx.answerCbQuery();
+        scene.on('text', async (ctx: SceneContextMessageUpdate) => {
+            if (!ctx.message || !('text' in ctx.message)) {
+                await ctx.reply('Произошла какая-то ошибка...');
 
-            await next();
-        });
+                await ctx.scene.reenter();
 
-        scene.action(new RegExp(`^${DiceScenes.ACTIONS.rollDice} (\\d+)`), async ctx => {
-            const dice = ctx.match[1];
-            const result = new DiceRoll(`d${dice}`);
+                return;
+            }
 
-            await ctx.editMessageText(`Ты бросил кубик <b>d${dice}</b>. Результат: <b>${String(result.total)}</b>`, {
-                reply_markup: undefined,
+            if (ctx.message.text === ACTIONS.ExitFromRoller) {
+                await ctx.reply('Ты вышел из режима броска кубиков', {
+                    reply_markup: { remove_keyboard: true }
+                });
+                await ctx.deleteMessage();
+                await ctx.scene.leave();
+
+                return;
+            }
+
+            const availDice = [ 'd2', 'd4', 'd6', 'd8', 'd10', 'd12', 'd20' ];
+
+            if (!availDice.includes(ctx.message.text)) {
+                await ctx.reply('Такого кубика нет в списке 😌');
+                await ctx.scene.reenter();
+
+                return;
+            }
+
+            const dice = ctx.message.text;
+            const result = new DiceRoll(dice);
+
+            await ctx.replyWithHTML(`Ты бросил кубик <b>${dice}</b>. Результат: <b>${String(result.total)}</b>`, {
                 parse_mode: 'HTML'
-            })
-            await ctx.reply(
-                'Ты можешь бросить еще раз:',
-                DiceScenes.diceKeyboard()
-            );
-        })
-
-        scene.action(DiceScenes.ACTIONS.exitFromRoller, async ctx => {
+            });
             await ctx.deleteMessage();
-            await ctx.reply('Ты вышел из режима броска кубиков');
-
-            await ctx.scene.leave();
         });
 
         return scene
     }
 
-    static diceButton(number: string): InlineKeyboardButton.CallbackButton {
-        return Markup.button.callback(number, `${DiceScenes.ACTIONS.rollDice} ${number}`);
-    }
+    private diceButton = (dice: string): Button => Markup.button(`${dice}`)
 
-    static diceKeyboard(): Markup.Markup<InlineKeyboardMarkup> {
+    private diceKeyboard() {
         return Markup
-            .inlineKeyboard([
+            .keyboard([
                 [
-                    DiceScenes.diceButton('2'),
-                    DiceScenes.diceButton('4'),
-                    DiceScenes.diceButton('6'),
-                    DiceScenes.diceButton('8')
+                    this.diceButton('d2'),
+                    this.diceButton('d4'),
+                    this.diceButton('d6'),
+                    this.diceButton('d8')
                 ],
                 [
-                    DiceScenes.diceButton('10'),
-                    DiceScenes.diceButton('12')
+                    this.diceButton('d10'),
+                    this.diceButton('d12')
                 ],
                 [
-                    DiceScenes.diceButton('20')
+                    this.diceButton('d20')
                 ],
-                DiceScenes.EXIT_BUTTON
-            ]);
+                this.EXIT_BUTTON
+            ]).extra();
     }
 }

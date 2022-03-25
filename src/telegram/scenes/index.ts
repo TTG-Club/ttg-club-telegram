@@ -1,9 +1,12 @@
 import SpellScenes from './SpellScenes';
 import DiceScenes from './DiceScenes';
 
-const scenes = [
-    SpellScenes.findSpell(),
-    DiceScenes.diceRoll()
-]
+const importedScenes = {
+    spellScenes: new SpellScenes(),
+    diceScenes: new DiceScenes()
+}
 
-export default scenes
+export default [
+    importedScenes.spellScenes.findSpell(),
+    importedScenes.diceScenes.diceRoll()
+]

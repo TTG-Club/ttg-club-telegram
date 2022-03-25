@@ -1,25 +1,21 @@
-import { Telegraf } from 'telegraf';
-import Commands from '../constants/Commands';
-import TelegramBot from '../TelegramBot';
-import IBot from '../../types/bot';
+import { Composer } from 'telegraf';
+import { COMMAND_NAME } from '../constants/Commands';
+import IBot from '../../../typings/TelegramBot';
+import TContext = IBot.TContext;
 
 export default class SpellActions {
-    private readonly bot: Telegraf<IBot.IContext>;
+    private bot = new Composer<TContext>();
 
     constructor() {
-        this.bot = TelegramBot.bot;
-
         this.registerCommands();
     }
 
-    private registerCommands() {
-        try {
-            this.bot.command(Commands.SPELL, async ctx => {
-                await ctx.scene.leave();
-                await ctx.scene.enter('findSpell');
-            })
-        } catch (err) {
-            throw new Error(err)
-        }
+    public registerCommands() {
+        this.bot.command(COMMAND_NAME.SPELL, async ctx => {
+            await ctx.scene.leave();
+            await ctx.scene.enter('findSpell');
+        });
+
+        return this.bot;
     }
 }

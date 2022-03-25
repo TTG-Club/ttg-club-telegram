@@ -23,16 +23,18 @@
         "pretty": true,
         "resolveJsonModule": true,
         "removeComments": false,
-        "sourceMap": false,
+        "sourceMap": true,
         "strictFunctionTypes": true,
         "strictNullChecks": true,
         "strictPropertyInitialization": true,
-        "target": "es6",
+        "target": "ES6",
         "baseUrl": ".",
         "types": ["node"],
         "typeRoots": [
             "./node_modules/@types"
-        ]
+        ],
+        "skipLibCheck": true
     },
-    "include": ["./src/**/*", "typings"],
+    "include": ["./src/**/*"],
+    "exclude": ["node_modules"]
 }

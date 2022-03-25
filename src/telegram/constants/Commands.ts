@@ -1,31 +1,27 @@
-import IBot from '../../types/bot';
+import IBot from '../../../typings/TelegramBot';
 
-export default class Commands {
-    static SPELL = 'spell'
+export enum COMMAND_NAME {
+    SPELL = 'spell',
+    SPELL_BY_ID = 'spellById',
+    DICE = 'dice',
+    START = 'start',
+    HELP = 'help',
+}
 
-    static SPELL_BY_ID = 'spellById'
-
-    static DICE = 'dice'
-
-    static START = 'start'
-
-    static HELP = 'help'
-
-    static COMMANDS_LIST: IBot.ICommands = {
-        [Commands.SPELL]: {
-            command: Commands.SPELL,
-            description: 'Поиск заклинания',
-            fullDescription: `/${Commands.SPELL} - Команда для входа в режим поиска заклинаний.`
-        },
-        [Commands.DICE]: {
-            command: Commands.DICE,
-            description: 'Бросить кубики',
-            fullDescription: `/${Commands.DICE} - Команда для входа в режим броска кубиков.`
-        },
-        [Commands.HELP]: {
-            command: Commands.HELP,
-            description: 'Помощь',
-            fullDescription: `/${Commands.HELP} - Описание команд.`
-        }
+export const COMMANDS_LIST: IBot.ICommands = {
+    [COMMAND_NAME.SPELL]: {
+        command: COMMAND_NAME.SPELL,
+        description: 'Поиск заклинания',
+        fullDescription: `/${ COMMAND_NAME.SPELL } - Команда для входа в режим поиска заклинаний.`
+    },
+    [COMMAND_NAME.DICE]: {
+        command: COMMAND_NAME.DICE,
+        description: 'Бросить кубики',
+        fullDescription: `/${ COMMAND_NAME.DICE } - Команда для входа в режим броска кубиков.`
+    },
+    [COMMAND_NAME.HELP]: {
+        command: COMMAND_NAME.HELP,
+        description: 'Помощь',
+        fullDescription: `/${ COMMAND_NAME.HELP } - Описание команд.`
     }
 }
