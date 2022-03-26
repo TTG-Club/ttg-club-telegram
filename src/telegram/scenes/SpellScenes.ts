@@ -5,6 +5,7 @@ import IBot from '../../../typings/TelegramBot';
 import NSpell from '../../../typings/Spell';
 import TContext = IBot.TContext;
 import HTTPService from '../../utils/HTTPService';
+import config from '../../.config';
 
 enum ACTIONS {
     ExitFromSearch = 'exitFromSearch',
@@ -241,12 +242,12 @@ export default class SpellScenes {
         const tags = [ 'b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'a', 'code', 'pre' ];
         return entries.map((str: string) => stripHtml(str, { ignoreTags: tags })
             .result
-            .replaceAll('href="/', `href="${ <string>process.env.SITE_URL }/`))
+            .replaceAll('href="/', `href="${ config.baseURL }/`))
             .join('\n\n');
     }
 
     private getOriginal = (engName: string): string => {
-        const url = `${ process.env.SITE_URL }/spells/${ engName.replaceAll(' ', '_') }`;
+        const url = `${ config.baseURL }/spells/${ engName.replaceAll(' ', '_') }`;
 
         return `\n\n—————————\n<b>Источник:</b> ${ url }`
     }

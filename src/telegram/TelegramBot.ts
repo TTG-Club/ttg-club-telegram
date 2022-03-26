@@ -1,23 +1,21 @@
-import 'dotenv/config';
 import {
     session,
     Telegraf,
     Stage
 } from 'telegraf';
 import _ from 'lodash';
+import config from '../.config';
 import scenes from './scenes';
 import { COMMANDS_LIST } from './constants/Commands';
 import actions from './actions';
 import IBot from '../../typings/TelegramBot';
 import TContext = IBot.TContext;
 
-const { TG_TOKEN } = process.env;
-
-if (!TG_TOKEN || !TG_TOKEN.length) {
+if (!config.tgToken || !config.tgToken.length) {
     throw new Error('В .env не указана переменная TG_TOKEN');
 }
 
-const bot = new Telegraf<TContext>(<string>TG_TOKEN);
+const bot = new Telegraf<TContext>(config.tgToken);
 const stage = new Stage(scenes);
 const launchCallback = async () => {
     try {

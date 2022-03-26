@@ -1,8 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import config from '../.config';
 
 export default class HTTPService {
-    private axios: AxiosInstance = axios.create({
-        baseURL: `${process.env.SITE_URL}/api/v1`
+    private readonly axios: AxiosInstance = axios.create({
+        baseURL: `${config.baseURL}/api/v1`
     });
 
     public async post(url: string, options: any) {
