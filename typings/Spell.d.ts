@@ -29,7 +29,7 @@ declare namespace NSpell {
         source: string
     }
 
-    interface ISpell {
+    type ISpell = {
         name: string
         englishName: string
         altName: string
