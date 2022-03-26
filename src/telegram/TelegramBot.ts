@@ -11,11 +11,7 @@ import actions from './actions';
 import IBot from '../../typings/TelegramBot';
 import TContext = IBot.TContext;
 
-const {
-    TG_TOKEN,
-    TG_USER_ID,
-    DEBUG_MODE
-} = process.env;
+const { TG_TOKEN } = process.env;
 
 if (!TG_TOKEN || !TG_TOKEN.length) {
     throw new Error('В .env не указана переменная TG_TOKEN');

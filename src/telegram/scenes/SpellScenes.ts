@@ -1,5 +1,5 @@
 import { BaseScene, Markup } from 'telegraf';
-import { Button, CallbackButton } from 'telegraf/typings/markup';
+import { CallbackButton } from 'telegraf/typings/markup';
 import { stripHtml } from 'string-strip-html';
 import IBot from '../../../typings/TelegramBot';
 import NSpell from '../../../typings/Spell';
@@ -24,9 +24,11 @@ const DAMAGE_TYPE = {
     piercing: 'колющий',
     slashing: 'рубящий',
     physical: 'дробящий, колющий и рубящий урон от немагических атак',
+    // eslint-disable-next-line max-len
     no_nosilver: 'дробящий, колющий и рубящий урон от немагических атак, а также от немагического оружия, которое при этом не посеребрено',
     no_damage: 'без урона',
     radiant: 'излучение',
+    // eslint-disable-next-line max-len
     no_admantit: 'дробящий, колющий и рубящий урон от немагических атак, а также от немагического оружия, которое при этом не изготовлено из адамантина',
     physical_magic: 'дробящий, колющий и рубящий урон от магического оружия',
     piercing_good: 'колющий от магического оружия, используемого добрыми существами',
@@ -115,6 +117,7 @@ export default class SpellScenes {
                 }
 
                 if (spellList.length > 10) {
+                    // eslint-disable-next-line max-len
                     await ctx.reply(`Я нашел слишком много заклинаний, где упоминается <b>«${ searchStr }»</b>... Попробуй уточнить название`);
 
                     await ctx.scene.reenter();
