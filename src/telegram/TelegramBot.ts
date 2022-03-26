@@ -17,22 +17,22 @@ const {
     DEBUG_MODE
 } = process.env;
 
+if (!TG_TOKEN || !TG_TOKEN.length) {
+    throw new Error('В .env не указана переменная TG_TOKEN');
+}
+
 const bot = new Telegraf<TContext>(<string>TG_TOKEN);
 const stage = new Stage(scenes);
 const launchCallback = async () => {
     try {
         const defaultCommands = _.cloneDeep(COMMANDS_LIST);
-        const modifiedList = Object.values(defaultCommands).map(item => ({
-            command: item.command,
-            description: item.description
-        }));
+        const modifiedList = Object.values(defaultCommands)
+            .map(item => ({
+                command: item.command,
+                description: item.description
+            }));
 
         await bot.telegram.setMyCommands(modifiedList);
-
-        if (!DEBUG_MODE || DEBUG_MODE !== 'true') {
-            await bot.telegram
-                .sendMessage(<string>TG_USER_ID, 'Я готов к работе 🙃')
-        }
     } catch (err) {
         throw new Error(err);
     }
