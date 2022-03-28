@@ -37,10 +37,6 @@ export default class BaseActions {
     private onHelp() {
         const helpResponse = async (ctx: TelegrafContext) => {
             try {
-                if (typeof ctx.answerCbQuery === 'function') {
-                    await ctx.answerCbQuery();
-                }
-
                 const defaultCommands = _.cloneDeep(COMMANDS_LIST);
                 const modifiedList = Object.values(defaultCommands).map(item => (
                     `${ COMMANDS_LIST[item.command].fullDescription }`
@@ -58,8 +54,14 @@ export default class BaseActions {
             }
         }
 
-        this.bot.action('baseHelp', async ctx => helpResponse(ctx));
+        this.bot.action('baseHelp', async ctx => {
+            await ctx.answerCbQuery();
 
-        this.bot.help(async ctx => helpResponse(ctx));
+            await helpResponse(ctx)
+        });
+
+        this.bot.help(async ctx => {
+            await helpResponse(ctx)
+        });
     }
 }

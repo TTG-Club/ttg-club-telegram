@@ -190,6 +190,12 @@ declare namespace NSpell {
         fromSubclass?: IClassItem[];
     }
 
+    interface IEntriesHigherLevel {
+        type: string;
+        name: string;
+        entries: string[];
+    }
+
     interface ISpell {
         id?: string
         name: string
@@ -203,7 +209,7 @@ declare namespace NSpell {
         classes: IClass
         source: ESource
         entries: string[]
-        entriesHigherLevel?: string[]
+        entriesHigherLevel?: IEntriesHigherLevel
         time: ITime[]
         page: number
         damageInflict?: EDamageInflict[]
@@ -214,8 +220,8 @@ declare namespace NSpell {
     }
 
     interface IRequest {
-        page: number
-        limit: number
+        page?: number
+        limit?: number
         search: string
         order?: {
             field: string

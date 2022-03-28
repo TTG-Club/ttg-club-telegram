@@ -1,22 +1,34 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller';
 import { BaseScene, Markup } from 'telegraf';
 import { SceneContextMessageUpdate } from 'telegraf/typings/stage';
-import { Button } from 'telegraf/typings/markup';
+import { Button, CallbackButton } from 'telegraf/typings/markup';
 
 enum ACTIONS {
-    ExitFromRoller = 'Закончить броски',
+    ExitFromRoller = 'exitFromDice',
 }
+
 export default class DiceScenes {
-    EXIT_BUTTON: Button[] = [ Markup.button(ACTIONS.ExitFromRoller) ];
+    EXIT_BUTTON: CallbackButton[] = [ Markup.callbackButton('Закончить броски', ACTIONS.ExitFromRoller) ];
 
     public diceRoll() {
         const scene = new BaseScene('diceRoll');
 
         scene.enter(async (ctx: SceneContextMessageUpdate) => {
             await ctx.reply(
-                'Ты вошел в режим броска кубиков.\nВыбирай кубик на клавиатуре и вперед!',
+                'Ты вошел в режим броска кубиков.\n\nВыбирай кубик на клавиатуре или отправь мне формулу',
                 this.diceKeyboard()
             );
+
+            await ctx.reply('Держи ссылку на подсказку, чтобы знать как пишутся формулы ☺️', {
+                reply_markup: {
+                    ...Markup.inlineKeyboard([[
+                        Markup.urlButton(
+                            'Dice Roller',
+                            'https://dice-roller.github.io/documentation/guide/notation/'
+                        )
+                    ], this.EXIT_BUTTON ])
+                }
+            })
         });
 
         scene.on('text', async (ctx: SceneContextMessageUpdate) => {
@@ -38,28 +50,70 @@ export default class DiceScenes {
                 return;
             }
 
-            const availDice = [ 'd2', 'd4', 'd6', 'd8', 'd10', 'd12', 'd20' ];
+            const str = ctx.message.text;
 
-            if (!availDice.includes(ctx.message.text)) {
-                await ctx.reply('Такого кубика нет в списке 😌');
-                await ctx.scene.reenter();
+            let notation;
+
+            switch (str) {
+                case 'пом':
+                    notation = '2d20kl1';
+
+                    break;
+
+                case 'пре':
+                    notation = '2d20kh1';
+
+                    break;
+
+                default:
+                    notation = str;
+
+                    break;
+            }
+
+            let result;
+
+            try {
+                result = new DiceRoll(notation);
+            } catch (err) {
+                await ctx.reply('В формуле броска кубиков ошибка.\n\nНе забывай про подсказку, если не получается', {
+                    reply_markup: {
+                        ...Markup.inlineKeyboard([[
+                            Markup.urlButton(
+                                'Dice Roller',
+                                'https://dice-roller.github.io/documentation/guide/notation/'
+                            )
+                        ], this.EXIT_BUTTON ])
+                    }
+                });
 
                 return;
             }
 
-            const dice = ctx.message.text;
-            const result = new DiceRoll(dice);
-
-            await ctx.replyWithHTML(`Ты бросил кубик <b>${dice}</b>. Результат: <b>${String(result.total)}</b>`, {
-                parse_mode: 'HTML'
+            // eslint-disable-next-line max-len
+            await ctx.replyWithHTML(`Ты бросил <b>${ notation }</b>. Результат: <b>${ String(result.total) }</b>\n\n<b>Расшифровка:</b> ${ result.output }`, {
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [ this.EXIT_BUTTON ]
+                }
             });
             await ctx.deleteMessage();
         });
 
+        scene.action(ACTIONS.ExitFromRoller, async ctx => {
+            await ctx.answerCbQuery();
+
+            await ctx.reply('Ты закончил бросать кубики', {
+                reply_markup: { remove_keyboard: true }
+            });
+
+            await ctx.scene.leave();
+        })
+
         return scene
     }
 
-    private diceButton = (dice: string): Button => Markup.button(`${dice}`)
+    private diceButton = (dice: string): Button => Markup.button(`${ dice }`)
 
     private diceKeyboard() {
         return Markup
@@ -75,9 +129,10 @@ export default class DiceScenes {
                     this.diceButton('d12')
                 ],
                 [
-                    this.diceButton('d20')
-                ],
-                this.EXIT_BUTTON
+                    this.diceButton('пом'),
+                    this.diceButton('d20'),
+                    this.diceButton('пре')
+                ]
             ]).extra();
     }
 }

@@ -1,4 +1,7 @@
-import { BaseScene, Markup } from 'telegraf';
+import {
+    BaseScene,
+    Markup
+} from 'telegraf';
 import { Extra } from 'telegraf/typings/telegram-types';
 import { CallbackButton } from 'telegraf/typings/markup';
 import { stripHtml } from 'string-strip-html';
@@ -74,7 +77,6 @@ export default class SpellScenes {
                 ctx.scene.session.state.searchStr = ctx.message.text;
 
                 const { searchStr } = ctx.scene.session.state;
-
                 const match = searchStr.match(/(?<spellName>.+?)(\[.+?])$/i);
 
                 if (await this.trySendSpellFromSession(ctx, match)) {
@@ -82,10 +84,16 @@ export default class SpellScenes {
                 }
 
                 const apiOptions: NSpell.IRequest = {
-                    page: 1,
-                    limit: 1000000,
                     search: searchStr as string,
+                    order: [{
+                        field: 'level',
+                        direction: 'asc'
+                    }, {
+                        field: 'name',
+                        direction: 'asc'
+                    }]
                 }
+
                 const spellList: NSpell.ISpell[] = await this.http.post('/spells', apiOptions);
 
                 let spell: NSpell.ISpell | undefined;
@@ -115,9 +123,15 @@ export default class SpellScenes {
 
                     await ctx.replyWithHTML(
                         // eslint-disable-next-line max-len
-                        `Я нашел несколько заклинаний, где упоминается <b>«${ searchStr }»</b>.\nВыбери подходящее из этого списка:`,
+                        `Я нашел несколько заклинаний, где упоминается <b>«${ searchStr }»</b>`,
                         this.getSpellListMarkup(ctx.scene.session.state.spellList).extra()
                     );
+
+                    await ctx.reply('Выбери подходящее из этого списка', {
+                        reply_markup: {
+                            ...Markup.inlineKeyboard([ this.EXIT_BUTTON ])
+                        }
+                    })
 
                     return;
                 }
@@ -139,6 +153,8 @@ export default class SpellScenes {
         });
 
         scene.action(ACTIONS.ExitFromSearch, async ctx => {
+            await ctx.answerCbQuery();
+
             await ctx.reply('Ты вышел из режима поиска заклинания', {
                 reply_markup: {
                     remove_keyboard: true
@@ -152,7 +168,7 @@ export default class SpellScenes {
             await ctx.reply('Это не похоже на название заклинания 🙃');
 
             await ctx.scene.reenter();
-        })
+        });
 
         return scene;
     }
@@ -276,7 +292,7 @@ export default class SpellScenes {
         });
 
         if (spell?.entriesHigherLevel) {
-            this.getEntries(spell.entriesHigherLevel).forEach(str => {
+            this.getEntries(spell.entriesHigherLevel.entries).forEach(str => {
                 updateMsg(`\n\n${ str }`)
             });
         }
@@ -285,10 +301,7 @@ export default class SpellScenes {
     }
 
     private getSpellListMarkup = (spellList: NSpell.ISpell[]) => Markup.keyboard(
-        [
-            ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ]),
-            this.EXIT_BUTTON
-        ]
+        [ ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ]) ]
     );
 
     private getDamageInflicts = (list: string[]): string => list.map((item: string) => (
