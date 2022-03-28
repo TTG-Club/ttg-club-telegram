@@ -16,8 +16,7 @@ import {
     CLASSES,
     SOURCES,
     TIMES,
-    RANGES,
-    DISTANCES, CLASSES_FROM
+    CLASSES_FROM
 } from '../../locales/spell';
 
 enum ACTIONS {
@@ -283,7 +282,7 @@ export default class SpellScenes {
 
         updateMsg(`\n<b>Время накладывания:</b> ${ this.getTimes(spell.time) }`);
         updateMsg(`\n<b>Дистанция:</b> ${ this.getRange(spell.range) }`);
-        updateMsg(`\n<b>Длительность:</b> ${ JSON.stringify(spell.duration) }`);
+        updateMsg(`\n<b>Длительность:</b> ${ this.getDuration(spell.duration) }`);
         updateMsg(`\n<b>Компоненты:</b> ${ this.getComponents(spell.components) }`);
         updateMsg(this.getClasses(spell.classes));
 
@@ -378,34 +377,11 @@ export default class SpellScenes {
         return res.join(', ');
     }
 
-    private getRange = (range: NSpell.IRange): string => {
-        const { type, distance } = range;
-        const typeStr = type in RANGES
-            ? RANGES[type as keyof typeof RANGES]
-            : type;
+    private getRange = (range: NSpell.IRange): string => range.raw.toLowerCase()
 
-        if (!distance) {
-            return typeStr
-        }
-
-        let dist = distance.type in DISTANCES
-            ? DISTANCES[distance.type as keyof typeof DISTANCES]
-            : distance.type;
-
-        if (typeof dist === 'function') {
-            dist = dist(distance.amount || 1)
-        }
-
-        const distStr = distance?.amount
-            ? `${ distance.amount } ${ dist }`
-            : dist;
-
-        if (!typeStr) {
-            return distStr;
-        }
-
-        return `${ typeStr } (${ distStr })`;
-    }
+    private getDuration = (durationList: NSpell.IDuration[]): string => durationList
+        .map(duration => duration.raw.toLowerCase())
+        .join('; ')
 
     private getEntries = (entries: string[]): string[] => {
         const tags = [ 'b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'a', 'code', 'pre' ];
