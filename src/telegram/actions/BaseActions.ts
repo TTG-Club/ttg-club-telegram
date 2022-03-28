@@ -14,7 +14,6 @@ export default class BaseActions {
     public registerCommands() {
         this.onStart();
         this.onHelp();
-        this.onActions();
 
         return this.bot;
     }
@@ -30,7 +29,7 @@ export default class BaseActions {
                     )
                 })
             } catch (err) {
-                throw new Error(err)
+                console.log(err)
             }
         })
     }
@@ -38,6 +37,10 @@ export default class BaseActions {
     private onHelp() {
         const helpResponse = async (ctx: TelegrafContext) => {
             try {
+                if (typeof ctx.answerCbQuery === 'function') {
+                    await ctx.answerCbQuery();
+                }
+
                 const defaultCommands = _.cloneDeep(COMMANDS_LIST);
                 const modifiedList = Object.values(defaultCommands).map(item => (
                     `${ COMMANDS_LIST[item.command].fullDescription }`
@@ -51,20 +54,12 @@ export default class BaseActions {
 
                 await ctx.replyWithHTML(msg);
             } catch (err) {
-                throw new Error(err);
+                console.log(err);
             }
         }
 
         this.bot.action('baseHelp', async ctx => helpResponse(ctx));
 
         this.bot.help(async ctx => helpResponse(ctx));
-    }
-
-    private onActions() {
-        this.bot.action(/.*/, async (ctx, next) => {
-            await ctx.answerCbQuery();
-
-            await next();
-        });
     }
 }

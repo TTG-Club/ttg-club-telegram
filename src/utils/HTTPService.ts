@@ -12,7 +12,7 @@ export default class HTTPService {
 
             return this.parseResponse(resp);
         } catch (err) {
-            throw new Error(err);
+            console.log(err);
         }
     }
 

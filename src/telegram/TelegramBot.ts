@@ -1,7 +1,7 @@
 import {
     session,
     Telegraf,
-    Stage
+    Stage,
 } from 'telegraf';
 import _ from 'lodash';
 import config from '../.config';
@@ -28,7 +28,7 @@ const launchCallback = async () => {
 
         await bot.telegram.setMyCommands(modifiedList);
     } catch (err) {
-        throw new Error(err);
+        console.log(err);
     }
 }
 
@@ -39,8 +39,12 @@ for (let i = 0; i < actions.length; i++) {
     bot.use(actions[i]);
 }
 
-bot.catch((err: string | undefined) => {
-    throw new Error(err);
+bot.catch(async (err: string | undefined) => {
+    if (!!bot?.context?.scene && 'leave' in bot.context.scene) {
+        bot.context.scene.leave();
+    }
+
+    console.log(err);
 });
 
 bot.launch()
@@ -52,7 +56,7 @@ process.once('SIGINT', async () => {
     try {
         await bot.stop();
     } catch (err) {
-        throw new Error(err)
+        console.log(err)
     }
 });
 
@@ -60,6 +64,6 @@ process.once('SIGTERM', async () => {
     try {
         await bot.stop();
     } catch (err) {
-        throw new Error(err)
+        console.log(err)
     }
 });

@@ -1,4 +1,5 @@
 import { BaseScene, Markup } from 'telegraf';
+import { Extra } from 'telegraf/typings/telegram-types';
 import { CallbackButton } from 'telegraf/typings/markup';
 import { stripHtml } from 'string-strip-html';
 import IBot from '../../../typings/TelegramBot';
@@ -6,48 +7,18 @@ import NSpell from '../../../typings/Spell';
 import TContext = IBot.TContext;
 import HTTPService from '../../utils/HTTPService';
 import config from '../../.config';
+import {
+    DAMAGE_INFLICTS,
+    SCHOOLS,
+    CLASSES,
+    SOURCES,
+    TIMES,
+    RANGES,
+    DISTANCES, CLASSES_FROM
+} from '../../locales/spell';
 
 enum ACTIONS {
     ExitFromSearch = 'exitFromSearch',
-    SpellByName = 'spellByName',
-}
-
-const DAMAGE_TYPE = {
-    fair: 'огонь',
-    cold: 'холод',
-    lightning: 'электричество',
-    poison: 'яд',
-    acid: 'кислота',
-    sound: 'звук',
-    necrotic: 'некротическая энергия',
-    psychic: 'психическая энергия',
-    bludgeoning: 'дробящий',
-    piercing: 'колющий',
-    slashing: 'рубящий',
-    physical: 'дробящий, колющий и рубящий урон от немагических атак',
-    // eslint-disable-next-line max-len
-    no_nosilver: 'дробящий, колющий и рубящий урон от немагических атак, а также от немагического оружия, которое при этом не посеребрено',
-    no_damage: 'без урона',
-    radiant: 'излучение',
-    // eslint-disable-next-line max-len
-    no_admantit: 'дробящий, колющий и рубящий урон от немагических атак, а также от немагического оружия, которое при этом не изготовлено из адамантина',
-    physical_magic: 'дробящий, колющий и рубящий урон от магического оружия',
-    piercing_good: 'колющий от магического оружия, используемого добрыми существами',
-    magic: 'урон от заклинаний',
-    dark: 'дробящий, колющий и рубящий, пока находится в области тусклого света или тьмы',
-    force: 'силовое поле',
-    metal_weapon: 'дробящий, колющий и рубящий урон от оружия из металла',
-}
-
-const SCHOOLS = {
-    conjuration: 'вызов',
-    evocation: 'воплощение',
-    illusion: 'иллюзия',
-    necromancy: 'некромантия',
-    abjuration: 'ограждение',
-    enchantment: 'очарование',
-    transmutation: 'преобразование',
-    divination: 'прорицание'
 }
 
 export default class SpellScenes {
@@ -81,6 +52,12 @@ export default class SpellScenes {
                     return;
                 }
 
+                if (ctx.message.text === 'Закончить поиск заклинания') {
+                    await this.leaveScene(ctx);
+
+                    return;
+                }
+
                 if (ctx.message.text.length < 3) {
                     await ctx.reply('Название слишком короткое', {
                         reply_markup: {
@@ -98,28 +75,34 @@ export default class SpellScenes {
 
                 const { searchStr } = ctx.scene.session.state;
 
-                const spellList: NSpell.ISpell[] = await this.http.post('/spells', {
-                    search: searchStr as string
-                });
+                const match = searchStr.match(/(?<spellName>.+?)(\[.+?])$/i);
+
+                if (await this.trySendSpellFromSession(ctx, match)) {
+                    return;
+                }
+
+                const apiOptions: NSpell.IRequest = {
+                    page: 1,
+                    limit: 1000000,
+                    search: searchStr as string,
+                }
+                const spellList: NSpell.ISpell[] = await this.http.post('/spells', apiOptions);
 
                 let spell: NSpell.ISpell | undefined;
 
                 if (spellList.length === 1) {
                     [ spell ] = spellList;
 
-                    const spellMsg: string = this.getSpellMessage(spell);
-
-                    await ctx.replyWithHTML(spellMsg, {
-                        disable_web_page_preview: true
-                    });
-                    await ctx.scene.leave();
+                    await this.sendSpellMessage(ctx, spell)
 
                     return;
                 }
 
                 if (spellList.length > 10) {
-                    // eslint-disable-next-line max-len
-                    await ctx.reply(`Я нашел слишком много заклинаний, где упоминается <b>«${ searchStr }»</b>... Попробуй уточнить название`);
+                    await ctx.replyWithHTML(`Я нашел слишком много заклинаний, где упоминается <b>«${
+                        searchStr }»</b>... попробуй уточнить название`, {
+                        reply_markup: { remove_keyboard: true }
+                    });
 
                     await ctx.scene.reenter();
 
@@ -133,7 +116,7 @@ export default class SpellScenes {
                     await ctx.replyWithHTML(
                         // eslint-disable-next-line max-len
                         `Я нашел несколько заклинаний, где упоминается <b>«${ searchStr }»</b>.\nВыбери подходящее из этого списка:`,
-                        this.getSpellListMarkup(spellList).extra()
+                        this.getSpellListMarkup(ctx.scene.session.state.spellList).extra()
                     );
 
                     return;
@@ -151,43 +134,16 @@ export default class SpellScenes {
                     }
                 });
 
-                await ctx.scene.leave();
+                await this.leaveScene(ctx);
             }
-        });
-
-        scene.action(/.*/, async (ctx, next) => {
-            await ctx.answerCbQuery();
-
-            await next();
-        });
-
-        scene.action(new RegExp(`^${ACTIONS.SpellByName} (.+)`), async ctx => {
-            if (!Array.isArray(ctx.match) || !ctx.match.length) {
-                await ctx.reply('Что-то пошло не так... попробуй запустить команду еще раз', {
-                    reply_markup: {
-                        remove_keyboard: true
-                    }
-                })
-
-                await ctx.scene.leave();
-
-                return;
-            }
-
-            const { match } = ctx;
-            const spell = ctx.scene.session.state.spellList
-                .find((item: NSpell.ISpell) => item.name === match[1]);
-
-            await ctx.editMessageText(this.getSpellMessage(spell), {
-                disable_web_page_preview: true,
-                parse_mode: 'HTML',
-                reply_markup: this.getSpellListMarkup(ctx.scene.session.state.spellList)
-            });
         });
 
         scene.action(ACTIONS.ExitFromSearch, async ctx => {
-            await ctx.editMessageReplyMarkup(undefined);
-            await ctx.reply('Ты вышел из режима поиска заклинания');
+            await ctx.reply('Ты вышел из режима поиска заклинания', {
+                reply_markup: {
+                    remove_keyboard: true
+                }
+            });
 
             await ctx.scene.leave();
         });
@@ -201,54 +157,258 @@ export default class SpellScenes {
         return scene;
     }
 
-    private getSpellMessage = (spell: NSpell.ISpell): string => {
-        let msg = `<b>${ spell.name }</b> [<i>${ spell.englishName }</i>]`;
+    private leaveScene = async (ctx: IBot.TContext) => {
+        await ctx.reply('Ты вышел из режима поиска заклинания', {
+            reply_markup: {
+                remove_keyboard: true
+            }
+        });
 
-        msg += `\n<i>${ this.getLevel(spell.level) }, ${ this.getSchool(spell.school) }</i>\n`;
-        msg += `\n<b>Время накладывания:</b> ${ JSON.stringify(spell.time) }`;
-        msg += `\n<b>Дистанция:</b> ${ JSON.stringify(spell.range) }`;
-        msg += `\n<b>Длительность:</b> ${ JSON.stringify(spell.duration) }`;
-        msg += `\n<b>Классы:</b> ${ JSON.stringify(spell.classes.fromClassList) }`;
-        msg += `\n<b>Источник:</b> ${ spell.source }`;
-
-        if (spell.damageInflict) {
-            msg += `\n<b>Тип урона:</b> ${ this.getDamageType(spell.damageInflict) }`;
-        }
-
-        msg += `\n\n${ this.getEntries(spell.entries) }`;
-        msg += this.getOriginal(spell.englishName);
-
-        return msg
+        await ctx.scene.leave();
     }
 
-    private getSpellListMarkup = (spellList: NSpell.ISpell[]) => Markup.inlineKeyboard(
+    private trySendSpellFromSession = async (ctx: IBot.TContext, match: { groups: { spellName: string } }) => {
+        if (
+            ctx.scene.session.state?.spellList?.length
+            && match?.groups?.spellName
+        ) {
+            const spell = ctx.scene.session.state.spellList
+                .find((item: NSpell.ISpell) => item.name === match.groups.spellName.trim());
+
+            if (!spell) {
+                return false;
+            }
+
+            await this.sendSpellMessage(ctx, spell);
+
+            return true
+        }
+
+        return false
+    }
+
+    private sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
+        const spellMsg: string[] = this.getSpellMessage(spell);
+        const originalObj = this.getOriginal(spell.englishName);
+
+        try {
+            for (let i = 0; i < spellMsg.length; i++) {
+                let extra: Extra = {
+                    disable_web_page_preview: true
+                };
+
+                if (i === spellMsg.length - 1) {
+                    extra = {
+                        ...extra,
+                        reply_markup: {
+                            ...Markup.inlineKeyboard([
+                                [ Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z') ],
+                                [ Markup.urlButton(originalObj.text, originalObj.url) ],
+                                this.EXIT_BUTTON
+                            ])
+                        }
+                    }
+                }
+
+                await ctx.replyWithHTML(spellMsg[i], extra);
+            }
+        } catch (err) {
+            console.log(originalObj)
+            console.error(err);
+
+            for (let i = 0; i < spellMsg.length; i++) {
+                let extra: Extra = {
+                    disable_web_page_preview: true
+                };
+
+                if (i === spellMsg.length - 1) {
+                    extra = {
+                        ...extra,
+                        reply_markup: { remove_keyboard: true }
+                    }
+                }
+
+                await ctx.reply(spellMsg[i], extra);
+            }
+
+            // eslint-disable-next-line max-len
+            await ctx.reply('Произошла ошибка, поэтому я выслал тебе сырую версию сообщения заклинания... пожалуйста, сообщи нам об этом в Discord', {
+                reply_markup: {
+                    ...Markup.inlineKeyboard([[
+                        Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
+                    ]])
+                }
+            });
+            await this.leaveScene(ctx);
+        }
+    }
+
+    private getSpellMessage = (spell: NSpell.ISpell): string[] => {
+        const result: string[] = [ `<b>${ spell.name }</b> [<i>${ spell.englishName }</i>]` ];
+        const updateMsg = (str: string) => {
+            const formattedStr = str.replaceAll('http://localhost:8080', 'https://dnd5.club');
+            const index = result.length > 0 ? result.length - 1 : 0;
+
+            if (result[index].length + str.length > 4000) {
+                result[index + 1] = formattedStr;
+
+                return;
+            }
+
+            result[index] += formattedStr;
+        }
+
+        updateMsg(`\n<i>${ this.getLevel(spell.level) }, ${ this.getSchool(spell.school) }${ spell?.meta?.ritual
+            ? ' (ритуал)'
+            : '' }</i>\n`);
+        updateMsg(`\n<b>Источник:</b> ${ this.getSource(spell.source) } [${ spell.source }]`);
+
+        if (spell?.damageInflict) {
+            updateMsg(`\n<b>Тип урона:</b> ${ this.getDamageInflicts(spell.damageInflict) }`);
+        }
+
+        updateMsg(`\n<b>Время накладывания:</b> ${ this.getTimes(spell.time) }`);
+        updateMsg(`\n<b>Дистанция:</b> ${ this.getRange(spell.range) }`);
+        updateMsg(`\n<b>Длительность:</b> ${ JSON.stringify(spell.duration) }`);
+        updateMsg(`\n<b>Компоненты:</b> ${ this.getComponents(spell.components) }`);
+        updateMsg(this.getClasses(spell.classes));
+
+        this.getEntries(spell.entries).forEach(str => {
+            updateMsg(`\n\n${ str }`)
+        });
+
+        if (spell?.entriesHigherLevel) {
+            this.getEntries(spell.entriesHigherLevel).forEach(str => {
+                updateMsg(`\n\n${ str }`)
+            });
+        }
+
+        return result;
+    }
+
+    private getSpellListMarkup = (spellList: NSpell.ISpell[]) => Markup.keyboard(
         [
-            ...spellList.map(spell => [
-                Markup.callbackButton(spell.name, `${ACTIONS.SpellByName} ${spell.name}`)
-            ]),
+            ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ]),
             this.EXIT_BUTTON
         ]
     );
 
-    private getDamageType = (list: string[]): string => list.map((item: string) => (item in DAMAGE_TYPE
-        ? DAMAGE_TYPE[item as keyof typeof DAMAGE_TYPE]
-        : item)).join('; ');
+    private getDamageInflicts = (list: string[]): string => list.map((item: string) => (
+        item in DAMAGE_INFLICTS
+            ? DAMAGE_INFLICTS[item as keyof typeof DAMAGE_INFLICTS]
+            : item)).join('; ');
 
-    private getSchool = (name: string): string => (name in SCHOOLS ? SCHOOLS[name as keyof typeof SCHOOLS] : name);
+    private getSchool = (name: string): string => (name in SCHOOLS
+        ? SCHOOLS[name as keyof typeof SCHOOLS]
+        : name);
 
     private getLevel = (level: number): string => (level ? `${ level } уровень` : 'Заговор');
 
-    private getEntries = (entries: string[]): string => {
+    private getClass = (name: string): string => (name in CLASSES
+        ? CLASSES[name as keyof typeof CLASSES]
+        : name);
+
+    private getSource = (source: string): string => (source in SOURCES
+        ? SOURCES[source as keyof typeof SOURCES]
+        : source)
+
+    private getClasses = (classes: NSpell.IClass): string => {
+        let res = '';
+
+        Object.entries(classes).forEach(([ from, list ]) => {
+            if (!Array.isArray(list) || !list.length) {
+                return;
+            }
+
+            const fromStr = from in CLASSES_FROM
+                ? CLASSES_FROM[from as keyof typeof CLASSES_FROM]
+                : from;
+            const str = list.map((classObj: NSpell.IClassItem) => {
+                const { name, source } = classObj;
+                const nameStr = this.getClass(name);
+
+                return `${ nameStr } [${ source }]`;
+            }).join('; ');
+
+            res += `\n<b>${ fromStr }:</b> ${ str }`;
+        });
+
+        return res
+    };
+
+    private getTime = (time: NSpell.ITime): string => {
+        const unit = time.unit in TIMES
+            ? TIMES[time.unit as keyof typeof TIMES](time.number)
+            : time.unit;
+
+        return time?.condition
+            ? `${ time.number } ${ unit }, ${ time.condition.trim() }`
+            : `${ time.number } ${ unit }`
+    }
+
+    private getTimes = (times: NSpell.ITime[]): string => times.map(time => this.getTime(time)).join('; ')
+
+    private getComponents = (components: NSpell.IComponents): string => {
+        const { v, s, m } = components;
+        const res = [];
+
+        if (v) {
+            res.push('вербальный');
+        }
+
+        if (s) {
+            res.push('соматический');
+        }
+
+        if (m) {
+            res.push(`материальный (${ m })`)
+        }
+
+        return res.join(', ');
+    }
+
+    private getRange = (range: NSpell.IRange): string => {
+        const { type, distance } = range;
+        const typeStr = type in RANGES
+            ? RANGES[type as keyof typeof RANGES]
+            : type;
+
+        if (!distance) {
+            return typeStr
+        }
+
+        let dist = distance.type in DISTANCES
+            ? DISTANCES[distance.type as keyof typeof DISTANCES]
+            : distance.type;
+
+        if (typeof dist === 'function') {
+            dist = dist(distance.amount || 1)
+        }
+
+        const distStr = distance?.amount
+            ? `${ distance.amount } ${ dist }`
+            : dist;
+
+        if (!typeStr) {
+            return distStr;
+        }
+
+        return `${ typeStr } (${ distStr })`;
+    }
+
+    private getEntries = (entries: string[]): string[] => {
         const tags = [ 'b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'a', 'code', 'pre' ];
         return entries.map((str: string) => stripHtml(str, { ignoreTags: tags })
             .result
-            .replaceAll('href="/', `href="${ config.baseURL }/`))
-            .join('\n\n');
+            .replaceAll('href="/', `href="${ config.baseURL }/`));
     }
 
-    private getOriginal = (engName: string): string => {
+    private getOriginal = (engName: string) => {
         const url = `${ config.baseURL }/spells/${ engName.replaceAll(' ', '_') }`;
 
-        return `\n\n—————————\n<b>Источник:</b> ${ url }`
+        return {
+            text: 'Оригинал на D&D5 Club',
+            url: url.replaceAll('http://localhost:8080', 'https://dnd5.club')
+        }
     }
 }
