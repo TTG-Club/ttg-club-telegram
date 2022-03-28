@@ -29,7 +29,7 @@ export default class BaseActions {
                     )
                 })
             } catch (err) {
-                console.log(err)
+                console.error(err)
             }
         })
     }
@@ -54,7 +54,7 @@ export default class BaseActions {
 
                 await ctx.replyWithHTML(msg);
             } catch (err) {
-                console.log(err);
+                console.error(err);
             }
         }
 

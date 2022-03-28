@@ -28,7 +28,7 @@ const launchCallback = async () => {
 
         await bot.telegram.setMyCommands(modifiedList);
     } catch (err) {
-        console.log(err);
+        console.error(err);
     }
 }
 
@@ -44,7 +44,7 @@ bot.catch(async (err: string | undefined) => {
         bot.context.scene.leave();
     }
 
-    console.log(err);
+    console.error(err);
 });
 
 bot.launch()
@@ -56,7 +56,7 @@ process.once('SIGINT', async () => {
     try {
         await bot.stop();
     } catch (err) {
-        console.log(err)
+        console.error(err)
     }
 });
 
@@ -64,6 +64,6 @@ process.once('SIGTERM', async () => {
     try {
         await bot.stop();
     } catch (err) {
-        console.log(err)
+        console.error(err)
     }
 });

@@ -213,7 +213,6 @@ export default class SpellScenes {
                 await ctx.replyWithHTML(spellMsg[i], extra);
             }
         } catch (err) {
-            console.log(originalObj)
             console.error(err);
 
             for (let i = 0; i < spellMsg.length; i++) {
@@ -246,16 +245,15 @@ export default class SpellScenes {
     private getSpellMessage = (spell: NSpell.ISpell): string[] => {
         const result: string[] = [ `<b>${ spell.name }</b> [<i>${ spell.englishName }</i>]` ];
         const updateMsg = (str: string) => {
-            const formattedStr = str.replaceAll('http://localhost:8080', 'https://dnd5.club');
             const index = result.length > 0 ? result.length - 1 : 0;
 
             if (result[index].length + str.length > 4000) {
-                result[index + 1] = formattedStr;
+                result[index + 1] = str;
 
                 return;
             }
 
-            result[index] += formattedStr;
+            result[index] += str;
         }
 
         updateMsg(`\n<i>${ this.getLevel(spell.level) }, ${ this.getSchool(spell.school) }${ spell?.meta?.ritual
@@ -408,7 +406,7 @@ export default class SpellScenes {
 
         return {
             text: 'Оригинал на D&D5 Club',
-            url: url.replaceAll('http://localhost:8080', 'https://dnd5.club')
+            url
         }
     }
 }
