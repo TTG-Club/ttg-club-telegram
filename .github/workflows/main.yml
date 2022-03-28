@@ -21,5 +21,8 @@ jobs:
                     source ~/.bashrc >> /dev/null 2>&1
                     cd ${{ secrets.PROJECT_PATH }} >> /dev/null 2>&1
                     git pull >> /dev/null 2>&1
-                    yarn install >> /dev/null 2>&1
-                    yarn build:prod >> /dev/null 2>&1
+                    pm2 stop ecosystem.config.js >> /dev/null 2>&1
+                    rm -rf ./node_modules >> /dev/null 2>&1
+                    npm ci >> /dev/null 2>&1
+                    npm run build:prod >> /dev/null 2>&1
+                    pm2 start ecosystem.config.js >> /dev/null 2>&1

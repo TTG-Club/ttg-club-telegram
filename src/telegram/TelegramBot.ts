@@ -1,90 +1,69 @@
-import { Scenes, session, Telegraf } from 'telegraf';
-import BaseActions from './actions/BaseActions';
-import SpellActions from './actions/SpellActions';
+import {
+    session,
+    Telegraf,
+    Stage,
+} from 'telegraf';
+import _ from 'lodash';
+import config from '../.config';
 import scenes from './scenes';
-import IBot from '../types/bot';
-import DB from '../db';
-import DiceActions from './actions/DiceActions';
+import { COMMANDS_LIST } from './constants/Commands';
+import actions from './actions';
+import IBot from '../../typings/TelegramBot';
+import TContext = IBot.TContext;
 
-export default class TelegramBot {
-    static bot: Telegraf<IBot.IContext> = new Telegraf<IBot.IContext>(<string>process.env.TG_TOKEN);
+if (!config.tgToken || !config.tgToken.length) {
+    throw new Error('В .env не указана переменная TG_TOKEN');
+}
 
-    private baseActions: BaseActions | undefined;
+const bot = new Telegraf<TContext>(config.tgToken);
+const stage = new Stage(scenes);
+const launchCallback = async () => {
+    try {
+        const defaultCommands = _.cloneDeep(COMMANDS_LIST);
+        const modifiedList = Object.values(defaultCommands)
+            .map(item => ({
+                command: item.command,
+                description: item.description
+            }));
 
-    private spellActions: SpellActions | undefined;
-
-    private diceActions: DiceActions | undefined;
-
-    constructor() {
-        DB.connect()
-            .then(async () => {
-                try {
-                    await this.init()
-                } catch (err) {
-                    console.error(err)
-                }
-            })
-            .catch(err => {
-                throw err
-            })
-    }
-
-    private async init(): Promise<void> {
-        try {
-            this.registerScenes();
-            this.registerActions();
-
-            await this.gracefulStop();
-
-            await TelegramBot.bot.launch()
-                .then(async () => {
-                    if (!process.env.DEBUG_MODE || process.env.DEBUG_MODE !== 'true') {
-                        await TelegramBot.bot.telegram
-                            .sendMessage(<string>process.env.TG_USER_ID, 'Я готов к работе 🙃')
-                    }
-                });
-        } catch (err) {
-            throw new Error(err);
-        }
-    }
-
-    private registerScenes = (): void => {
-        const stage = new Scenes.Stage<IBot.IContext>(scenes);
-
-        TelegramBot.bot.use(session());
-        TelegramBot.bot.use(stage.middleware());
-        TelegramBot.bot.use((ctx, next) => {
-            // eslint-disable-next-line no-param-reassign
-            ctx.contextProp ??= '';
-            // eslint-disable-next-line no-param-reassign
-            ctx.session.sessionProp ??= 0;
-            // eslint-disable-next-line no-param-reassign
-            ctx.scene.session.sceneSessionProp ??= 0;
-
-            return next()
-        })
-    }
-
-    private registerActions = (): void => {
-        this.baseActions = new BaseActions();
-        this.spellActions = new SpellActions();
-        this.diceActions = new DiceActions();
-    }
-
-    private gracefulStop = async (): Promise<void> => {
-        try {
-            process.once('SIGINT', async () => {
-                await TelegramBot.bot.stop('SIGINT');
-            });
-
-            process.once('SIGTERM', async () => {
-                await TelegramBot.bot.stop('SIGTERM');
-            });
-        } catch (err) {
-            throw new Error(err)
-        }
+        await bot.telegram.setMyCommands(modifiedList);
+    } catch (err) {
+        console.log(err);
     }
 }
 
-// eslint-disable-next-line no-new
-new TelegramBot();
+bot.use(session());
+bot.use(stage.middleware());
+
+for (let i = 0; i < actions.length; i++) {
+    bot.use(actions[i]);
+}
+
+bot.catch(async (err: string | undefined) => {
+    if (!!bot?.context?.scene && 'leave' in bot.context.scene) {
+        bot.context.scene.leave();
+    }
+
+    console.log(err);
+});
+
+bot.launch()
+    .then(async () => {
+        await launchCallback();
+    });
+
+process.once('SIGINT', async () => {
+    try {
+        await bot.stop();
+    } catch (err) {
+        console.log(err)
+    }
+});
+
+process.once('SIGTERM', async () => {
+    try {
+        await bot.stop();
+    } catch (err) {
+        console.log(err)
+    }
+});
