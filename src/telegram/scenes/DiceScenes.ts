@@ -1,7 +1,7 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller';
 import { BaseScene, Markup } from 'telegraf';
-import { SceneContextMessageUpdate } from 'telegraf/typings/stage';
 import { Button, CallbackButton } from 'telegraf/typings/markup';
+import IBot from '../../../typings/TelegramBot';
 
 enum ACTIONS {
     ExitFromRoller = 'exitFromDice',
@@ -11,9 +11,9 @@ export default class DiceScenes {
     EXIT_BUTTON: CallbackButton[] = [ Markup.callbackButton('Закончить броски', ACTIONS.ExitFromRoller) ];
 
     public diceRoll() {
-        const scene = new BaseScene('diceRoll');
+        const scene = new BaseScene<IBot.TContext>('diceRoll');
 
-        scene.enter(async (ctx: SceneContextMessageUpdate) => {
+        scene.enter(async ctx => {
             await ctx.reply(
                 'Ты вошел в режим броска кубиков.\n\nВыбирай кубик на клавиатуре или отправь мне формулу',
                 this.diceKeyboard()
@@ -31,7 +31,7 @@ export default class DiceScenes {
             })
         });
 
-        scene.on('text', async (ctx: SceneContextMessageUpdate) => {
+        scene.on('text', async ctx => {
             if (!ctx.message || !('text' in ctx.message)) {
                 await ctx.reply('Произошла какая-то ошибка...');
 
@@ -52,52 +52,17 @@ export default class DiceScenes {
 
             const str = ctx.message.text;
 
-            let notation;
-
             switch (str) {
                 case 'пом':
-                    notation = '2d20kl1';
-
-                    break;
-
                 case 'пре':
-                    notation = '2d20kh1';
+                    await this.dropOrKeep(ctx, str);
 
                     break;
-
                 default:
-                    notation = str;
+                    await this.diceRoller(ctx, str);
 
                     break;
             }
-
-            let result;
-
-            try {
-                result = new DiceRoll(notation);
-            } catch (err) {
-                await ctx.reply('В формуле броска кубиков ошибка.\n\nНе забывай про подсказку, если не получается', {
-                    reply_markup: {
-                        ...Markup.inlineKeyboard([[
-                            Markup.urlButton(
-                                'Dice Roller',
-                                'https://dice-roller.github.io/documentation/guide/notation/'
-                            )
-                        ], this.EXIT_BUTTON ])
-                    }
-                });
-
-                return;
-            }
-
-            // eslint-disable-next-line max-len
-            await ctx.replyWithHTML(`Ты бросил <b>${ notation }</b>. Результат: <b>${ String(result.total) }</b>\n\n<b>Расшифровка:</b> ${ result.output }`, {
-                parse_mode: 'HTML',
-                reply_markup: {
-                    inline_keyboard: [ this.EXIT_BUTTON ]
-                }
-            });
-            await ctx.deleteMessage();
         });
 
         scene.action(ACTIONS.ExitFromRoller, async ctx => {
@@ -134,5 +99,77 @@ export default class DiceScenes {
                     this.diceButton('пре')
                 ]
             ]).extra();
+    }
+
+    private dropOrKeep = async (ctx: IBot.ISceneSessionContext, str: string) => {
+        try {
+            const roll = new DiceRoll(str === 'пре' ? '2d20kh1' : '2d20kl1');
+            const resultStr = roll.export();
+
+            if (!resultStr) {
+                return;
+            }
+
+            const result = JSON.parse(resultStr);
+            const { rolls } = result.rolls[0];
+
+            await ctx.replyWithHTML(
+                `<b>Бросок:</b> 2d20 с ${ ctx.message.text === 'пом' ? 'помехой' : 'преимуществом' }`
+                + `\n<b>Результат:</b> ${ String(roll.total) }`
+                + `\n\n<b>Лучший результат:</b> ${
+                    rolls.find((dice: any) => dice.useInTotal === (str === 'пре')).value }`
+                + `\n<b>Худший результат:</b> ${
+                    rolls.find((dice: any) => dice.useInTotal === (str !== 'пре')).value }`
+                + `\n\n<b>Развернутый результат</b> ${ roll.output }`,
+                {
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        inline_keyboard: [ this.EXIT_BUTTON ]
+                    }
+                }
+            );
+            await ctx.deleteMessage();
+
+            return;
+        } catch (err) {
+            await ctx.reply('Произошла ошибка... попробуй еще раз или напиши нам в Discord-канал', {
+                reply_markup: {
+                    ...Markup.inlineKeyboard([
+                        [ Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z') ]
+                    ])
+                }
+            })
+        }
+    }
+
+    private diceRoller = async (ctx: IBot.ISceneSessionContext, notation: string) => {
+        try {
+            const roll = new DiceRoll(notation);
+
+            // eslint-disable-next-line max-len
+            await ctx.replyWithHTML(
+                `<b>Бросок:</b> ${ notation }`
+                + `\n<b>Результат:</b> ${ String(roll.total) }`
+                + `\n\n<b>Развернутый результат</b> ${ roll.output }`,
+                {
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        inline_keyboard: [ this.EXIT_BUTTON ]
+                    }
+                }
+            );
+            await ctx.deleteMessage();
+        } catch (err) {
+            await ctx.reply('В формуле броска кубиков ошибка.\n\nНе забывай про подсказку, если не получается', {
+                reply_markup: {
+                    ...Markup.inlineKeyboard([[
+                        Markup.urlButton(
+                            'Dice Roller',
+                            'https://dice-roller.github.io/documentation/guide/notation/'
+                        )
+                    ], this.EXIT_BUTTON ])
+                }
+            });
+        }
     }
 }
