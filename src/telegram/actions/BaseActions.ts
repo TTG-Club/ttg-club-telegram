@@ -75,7 +75,7 @@ export default class BaseActions {
                     ...Markup.inlineKeyboard([[
                         Markup.urlButton('Сайт DnD5 Club', 'https://dnd5.club/')
                     ], [
-                        Markup.callbackButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
+                        Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
                     ]])
                 }
             })
