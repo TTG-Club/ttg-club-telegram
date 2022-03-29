@@ -72,18 +72,23 @@ export default class SpellScenes {
                     return;
                 }
 
+                const input: string = ctx.message.text.trim();
+                const match = input.match(/(?<spellName>.+?)(\[.+?])$/i);
+                const matchedName = match?.groups?.spellName?.trim();
+
                 // eslint-disable-next-line no-param-reassign
-                ctx.scene.session.state.searchStr = ctx.message.text;
+                ctx.scene.session.state.searchStr = ctx.message.text.trim();
 
-                const { searchStr } = ctx.scene.session.state;
-                const match = searchStr.match(/(?<spellName>.+?)(\[.+?])$/i);
-
-                if (await this.trySendSpellFromSession(ctx, match)) {
+                if (!!matchedName && await this.trySendSpellFromSession(ctx, matchedName)) {
                     return;
                 }
 
+                const value: string = matchedName || input;
                 const apiOptions: NSpell.IRequest = {
-                    search: searchStr as string,
+                    search: {
+                        exact: !!matchedName,
+                        value
+                    },
                     order: [{
                         field: 'level',
                         direction: 'asc'
@@ -91,8 +96,7 @@ export default class SpellScenes {
                         field: 'name',
                         direction: 'asc'
                     }]
-                }
-
+                };
                 const spellList: NSpell.ISpell[] = await this.http.post('/spells', apiOptions);
 
                 let spell: NSpell.ISpell | undefined;
@@ -106,10 +110,13 @@ export default class SpellScenes {
                 }
 
                 if (spellList.length > 10) {
-                    await ctx.replyWithHTML(`Я нашел слишком много заклинаний, где упоминается <b>«${
-                        searchStr }»</b>... попробуй уточнить название`, {
-                        reply_markup: { remove_keyboard: true }
-                    });
+                    await ctx.replyWithHTML(
+                        `Я нашел слишком много заклинаний, где упоминается <b>«${ value }»</b>...`
+                        + 'попробуй уточнить название',
+                        {
+                            reply_markup: { remove_keyboard: true }
+                        }
+                    );
 
                     await ctx.scene.reenter();
 
@@ -122,7 +129,7 @@ export default class SpellScenes {
 
                     await ctx.replyWithHTML(
                         // eslint-disable-next-line max-len
-                        `Я нашел несколько заклинаний, где упоминается <b>«${ searchStr }»</b>`,
+                        `Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`,
                         this.getSpellListMarkup(ctx.scene.session.state.spellList).extra()
                     );
 
@@ -182,13 +189,13 @@ export default class SpellScenes {
         await ctx.scene.leave();
     }
 
-    private trySendSpellFromSession = async (ctx: IBot.TContext, match: { groups: { spellName: string } }) => {
+    private trySendSpellFromSession = async (ctx: IBot.TContext, name: string) => {
         if (
             ctx.scene.session.state?.spellList?.length
-            && match?.groups?.spellName
+            && name
         ) {
             const spell = ctx.scene.session.state.spellList
-                .find((item: NSpell.ISpell) => item.name === match.groups.spellName.trim());
+                .find((item: NSpell.ISpell) => item.name === name);
 
             if (!spell) {
                 return false;
@@ -217,7 +224,6 @@ export default class SpellScenes {
                         ...extra,
                         reply_markup: {
                             ...Markup.inlineKeyboard([
-                                [ Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z') ],
                                 [ Markup.urlButton(originalObj.text, originalObj.url) ],
                                 this.EXIT_BUTTON
                             ])
@@ -292,7 +298,7 @@ export default class SpellScenes {
 
         if (spell?.entriesHigherLevel) {
             this.getEntries(spell.entriesHigherLevel.entries).forEach((str, index) => {
-                updateMsg(`\n\n${!index ? '<b>На больших уровнях: </b>' : ''}${ str }`)
+                updateMsg(`\n\n${ !index ? '<b>На больших уровнях: </b>' : '' }${ str }`)
             });
         }
 

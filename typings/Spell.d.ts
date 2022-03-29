@@ -221,10 +221,15 @@ declare namespace NSpell {
         }
     }
 
+    interface ISearch {
+        value: string
+        exact?: boolean
+    }
+
     interface IRequest {
         page?: number
         limit?: number
-        search: string
+        search: ISearch
         order?: {
             field: string
             direction: 'asc' | 'desc'
