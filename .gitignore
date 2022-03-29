@@ -5,6 +5,7 @@ node_modules
 /client
 /**/public_html
 yarn.lock
+ecosystem.config.js
 
 # local env files
 .env
