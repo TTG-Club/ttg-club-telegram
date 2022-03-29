@@ -156,6 +156,7 @@ declare namespace NSpell {
     }
 
     interface IRange {
+        raw: string
         type: ERange
         distance?: IDistance
     }
@@ -167,6 +168,7 @@ declare namespace NSpell {
     }
 
     interface IDuration {
+        raw: string
         type?: EDuration
         duration?: IDurationOptions
         concentration?: boolean

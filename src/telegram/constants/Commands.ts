@@ -4,6 +4,7 @@ export enum COMMAND_NAME {
     SPELL = 'spell',
     DICE = 'dice',
     HELP = 'help',
+    ABOUT = 'about'
 }
 
 export const COMMANDS_LIST: IBot.ICommands = {
@@ -16,6 +17,11 @@ export const COMMANDS_LIST: IBot.ICommands = {
         command: COMMAND_NAME.DICE,
         description: 'Бросить кубики',
         fullDescription: `/${ COMMAND_NAME.DICE } - Режим броска кубиков.`
+    },
+    [COMMAND_NAME.ABOUT]: {
+        command: COMMAND_NAME.ABOUT,
+        description: 'О боте',
+        fullDescription: `/${ COMMAND_NAME.ABOUT } - Небольшая информация о боте.`
     },
     [COMMAND_NAME.HELP]: {
         command: COMMAND_NAME.HELP,
