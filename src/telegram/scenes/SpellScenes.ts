@@ -291,8 +291,8 @@ export default class SpellScenes {
         });
 
         if (spell?.entriesHigherLevel) {
-            this.getEntries(spell.entriesHigherLevel.entries).forEach(str => {
-                updateMsg(`\n\n${ str }`)
+            this.getEntries(spell.entriesHigherLevel.entries).forEach((str, index) => {
+                updateMsg(`\n\n${!index ? '<b>На больших уровнях: </b>' : ''}${ str }`)
             });
         }
 
