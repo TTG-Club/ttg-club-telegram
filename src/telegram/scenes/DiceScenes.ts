@@ -42,8 +42,8 @@ scene.enter(async ctx => {
         reply_markup: {
             ...getDiceKeyboard(),
             input_field_placeholder: 'Напр., «2d20»...',
+            resize_keyboard: true,
             selective: true,
-            resize_keyboard: true
         },
         disable_notification: true
     });

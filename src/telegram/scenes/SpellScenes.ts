@@ -210,8 +210,8 @@ scene.on('text', async ctx => {
                 reply_markup: {
                     ...getSpellListKeyboard(ctx.scene.session.state.spellList),
                     input_field_placeholder: 'Название...',
-                    selective: true,
                     resize_keyboard: true,
+                    selective: true,
                 },
                 disable_notification: true,
             });
