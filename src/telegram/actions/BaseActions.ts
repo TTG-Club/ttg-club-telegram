@@ -6,6 +6,7 @@ import {
 import { TelegrafContext } from 'telegraf/typings/context';
 import { COMMAND_NAME, COMMANDS_LIST } from '../constants/Commands';
 import IBot from '../../../typings/TelegramBot';
+import { ABOUT_MESSAGE, SOCIAL_LINKS } from '../../locales/about';
 
 const bot = new Composer<IBot.TContext>();
 const helpResponse = async (ctx: TelegrafContext) => {
@@ -21,7 +22,10 @@ const helpResponse = async (ctx: TelegrafContext) => {
             msg += `\n${cmd}`;
         });
 
-        await ctx.replyWithHTML(msg);
+        await ctx.replyWithHTML(msg, {
+            reply_to_message_id: ctx.message?.message_id,
+            disable_notification: true
+        });
     } catch (err) {
         console.error(err);
     }
@@ -30,6 +34,7 @@ const helpResponse = async (ctx: TelegrafContext) => {
 bot.start(async ctx => {
     try {
         await ctx.reply('Приветствую, искатель приключений! 👋🏻', {
+            reply_to_message_id: ctx.message?.message_id,
             reply_markup: Markup.inlineKeyboard(
                 [[
                     Markup.callbackButton('Список команд', 'baseHelp')
@@ -50,17 +55,20 @@ bot.help(async ctx => {
 });
 
 bot.command(COMMAND_NAME.ABOUT, async ctx => {
-    await ctx.reply('Этот бот служит дополнением для онлайн-справочника DnD5 Club, '
-        + 'доступного по этой ссылке: https://dnd5.club/'
-        + '\n\nПрисоединяйся к нашему Discord-каналу по кнопке ниже ☺️', {
-        reply_markup: {
-            ...Markup.inlineKeyboard([[
-                Markup.urlButton('Сайт DnD5 Club', 'https://dnd5.club/')
-            ], [
-                Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
-            ]])
-        }
-    })
+    const getLinksKeyboard = () => Markup.inlineKeyboard(
+        SOCIAL_LINKS.map(link => ([
+            Markup.urlButton(link.label, link.url)
+        ]))
+    )
+
+    await ctx.reply(
+        ABOUT_MESSAGE,
+        getLinksKeyboard()
+            .extra({
+                reply_to_message_id: ctx.message?.message_id
+            })
+            .notifications(false)
+    )
 });
 
 bot.action(/.*/, async ctx => {
