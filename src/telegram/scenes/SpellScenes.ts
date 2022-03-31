@@ -3,7 +3,7 @@ import {
     Markup
 } from 'telegraf';
 import { Extra } from 'telegraf/typings/telegram-types';
-import { Button } from 'telegraf/typings/markup';
+import { CallbackButton } from 'telegraf/typings/markup';
 import IBot from '../../../typings/TelegramBot';
 import NSpell from '../../../typings/Spell';
 import HTTPService from '../../utils/HTTPService';
@@ -12,23 +12,22 @@ import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
 
 enum ACTIONS {
-    ExitFromSearch = '❌ Закончить поиск',
+    ExitFromSearch = 'exitFromSearch',
 }
 
 const scene = new BaseScene<IBot.TContext>('findSpell');
 const http: HTTPService = new HTTPService();
 const spellsMiddleware = new SpellsMiddleware();
 
-const EXIT_BUTTON: Button[] = [
-    Markup.button(ACTIONS.ExitFromSearch)
+const EXIT_BUTTON: CallbackButton[] = [
+    Markup.callbackButton('Закончить поиск заклинания', ACTIONS.ExitFromSearch)
 ];
 
 const LEAVE_MSG = 'вышел(а) из режима поиска заклинания';
 
-const getSpellListKeyboard = (spellList: NSpell.ISpell[]) => [
-    EXIT_BUTTON,
+const getSpellListKeyboard = (spellList: NSpell.ISpell[]) => Markup.keyboard([
     ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ])
-];
+]);
 
 const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
     const { messages, url } = spellsMiddleware.getSpellMessage(spell);
@@ -44,9 +43,12 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
             if (i === messages.length - 1) {
                 extra = {
                     ...extra,
-                    reply_markup: Markup.inlineKeyboard([
-                        [ Markup.urlButton('Оригинал на D&D5 Club', url) ]
-                    ]),
+                    reply_markup: {
+                        ...Markup.inlineKeyboard([
+                            [ Markup.urlButton('Оригинал на D&D5 Club', url) ],
+                            EXIT_BUTTON
+                        ])
+                    },
                 }
             }
 
@@ -104,11 +106,7 @@ scene.enter(async ctx => {
         + '\n\nВведи название заклинания (минимум 3 буквы)', {
         reply_to_message_id: ctx.message?.message_id,
         disable_notification: true,
-        reply_markup: {
-            keyboard: [ EXIT_BUTTON ],
-            selective: true,
-            resize_keyboard: true
-        },
+        reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
     });
 });
 
@@ -132,13 +130,6 @@ scene.on('text', async ctx => {
         }
 
         const input: string = ctx.message.text.trim();
-
-        if (input === ACTIONS.ExitFromSearch) {
-            await BaseHandler.leaveScene(ctx, LEAVE_MSG);
-
-            return;
-        }
-
         const match = input.match(/(?<spellName>.+?)(\[.+?])$/i);
         const matchedName = match?.groups?.spellName?.trim();
 
@@ -192,16 +183,20 @@ scene.on('text', async ctx => {
             // eslint-disable-next-line no-param-reassign
             ctx.scene.session.state.spellList = spellList;
 
-            await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`
-                + '\nВыбери подходящее из этого списка', {
-                reply_to_message_id: ctx.message.message_id,
+            await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`, {
+                reply_to_message_id: ctx.message?.message_id,
                 disable_notification: true,
                 reply_markup: {
-                    keyboard: getSpellListKeyboard(spellList),
+                    ...getSpellListKeyboard(spellList),
                     input_field_placeholder: 'Название...',
                     selective: true,
                     resize_keyboard: true
                 },
+            });
+
+            await ctx.reply('Выбери подходящее из этого списка', {
+                reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
+                disable_notification: true
             });
 
             return;
@@ -221,6 +216,12 @@ scene.on('text', async ctx => {
 
         await BaseHandler.leaveScene(ctx, LEAVE_MSG);
     }
+});
+
+scene.action(ACTIONS.ExitFromSearch, async ctx => {
+    await ctx.answerCbQuery();
+
+    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 });
 
 export default scene;
