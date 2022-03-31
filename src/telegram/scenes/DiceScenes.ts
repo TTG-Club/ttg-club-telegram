@@ -2,12 +2,15 @@ import { BaseScene, Markup } from 'telegraf';
 import { Button, CallbackButton } from 'telegraf/typings/markup';
 import IBot from '../../../typings/TelegramBot';
 import DiceRollerMiddleware from '../../middlewares/DiceRollerMiddleware';
+import BaseHandler from '../utils/BaseHandler';
 
 enum ACTIONS {
     ExitFromRoller = 'exitFromDice',
 }
 
 const EXIT_BUTTON: CallbackButton[] = [ Markup.callbackButton('Закончить броски', ACTIONS.ExitFromRoller) ];
+
+const LEAVE_MSG = 'закончил бросать кубики';
 
 const getDiceBtn = (dice: string): Button => Markup.button(`${ dice }`)
 
@@ -103,16 +106,7 @@ scene.on('text', async ctx => {
 scene.action(ACTIONS.ExitFromRoller, async ctx => {
     await ctx.answerCbQuery();
 
-    await ctx.reply('Ты закончил бросать кубики', {
-        reply_markup: {
-            remove_keyboard: true,
-            selective: true
-        },
-        disable_notification: true,
-        reply_to_message_id: ctx.message?.message_id,
-    });
-
-    await ctx.scene.leave();
+    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 })
 
 export default scene

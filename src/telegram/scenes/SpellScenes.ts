@@ -8,6 +8,7 @@ import IBot from '../../../typings/TelegramBot';
 import NSpell from '../../../typings/Spell';
 import HTTPService from '../../utils/HTTPService';
 import SpellsMiddleware from '../../middlewares/SpellsMiddleware';
+import BaseHandler from '../utils/BaseHandler';
 
 enum ACTIONS {
     ExitFromSearch = 'exitFromSearch',
@@ -21,18 +22,7 @@ const EXIT_BUTTON: CallbackButton[] = [
     Markup.callbackButton('Закончить поиск заклинания', ACTIONS.ExitFromSearch)
 ];
 
-const leaveScene = async (ctx: IBot.TContext) => {
-    await ctx.reply('Ты вышел из режима поиска заклинания', {
-        reply_markup: {
-            remove_keyboard: true,
-            selective: true,
-        },
-        disable_notification: true,
-        reply_to_message_id: ctx.message?.message_id
-    });
-
-    await ctx.scene.leave();
-}
+const LEAVE_MSG = 'вышел из режима поиска заклинания';
 
 const getSpellListMarkup = (spellList: NSpell.ISpell[]) => Markup.keyboard(
     [ ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ]) ]
@@ -108,7 +98,7 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
             disable_notification: true,
             reply_to_message_id: ctx.message?.message_id
         });
-        await leaveScene(ctx);
+        await BaseHandler.leaveScene(ctx, LEAVE_MSG);
     }
 }
 
@@ -151,12 +141,6 @@ scene.on('text', async ctx => {
             });
 
             await ctx.scene.reenter();
-
-            return;
-        }
-
-        if (ctx.message.text === 'Закончить поиск заклинания') {
-            await leaveScene(ctx);
 
             return;
         }
@@ -275,14 +259,14 @@ scene.on('text', async ctx => {
             reply_to_message_id: ctx.message?.message_id
         });
 
-        await leaveScene(ctx);
+        await BaseHandler.leaveScene(ctx, LEAVE_MSG);
     }
 });
 
 scene.action(ACTIONS.ExitFromSearch, async ctx => {
     await ctx.answerCbQuery();
 
-    await leaveScene(ctx);
+    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 });
 
 export default scene;
