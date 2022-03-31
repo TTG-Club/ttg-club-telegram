@@ -12,6 +12,7 @@ export default class BaseHandler {
             },
             parse_mode: 'HTML',
             disable_notification: true,
+            reply_to_message_id: ctx.message?.message_id,
         });
 
         await ctx.scene.leave();

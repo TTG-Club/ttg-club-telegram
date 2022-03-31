@@ -47,7 +47,8 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
                             [ Markup.urlButton('Оригинал на D&D5 Club', url) ],
                             EXIT_BUTTON
                         ])
-                    }
+                    },
+                    reply_to_message_id: ctx.message?.message_id,
                 }
             }
 
@@ -68,7 +69,8 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
                     reply_markup: {
                         remove_keyboard: true,
                         selective: true
-                    }
+                    },
+                    reply_to_message_id: ctx.message?.message_id,
                 }
             }
 
@@ -121,12 +123,7 @@ scene.enter(async ctx => {
 scene.on('text', async ctx => {
     try {
         if (!ctx.message || !('text' in ctx.message)) {
-            await ctx.reply('Произошла какая-то ошибка...', {
-                reply_markup: {
-                    remove_keyboard: true,
-                    selective: true
-                }
-            });
+            await ctx.reply('Произошла какая-то ошибка...');
 
             await ctx.scene.reenter();
 
@@ -139,6 +136,7 @@ scene.on('text', async ctx => {
                     remove_keyboard: true,
                     selective: true
                 },
+                reply_to_message_id: ctx.message.message_id,
                 disable_notification: true
             });
 
@@ -191,6 +189,7 @@ scene.on('text', async ctx => {
                         remove_keyboard: true,
                         selective: true
                     },
+                    reply_to_message_id: ctx.message.message_id,
                     disable_notification: true,
                 }
             );
@@ -209,13 +208,14 @@ scene.on('text', async ctx => {
                     selective: true,
                     resize_keyboard: true
                 },
+                reply_to_message_id: ctx.message.message_id,
                 disable_notification: true,
             });
 
             await ctx.reply('Выбери подходящее из этого списка', {
                 reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
                 disable_notification: true
-            })
+            });
 
             return;
         }
@@ -225,6 +225,7 @@ scene.on('text', async ctx => {
                 remove_keyboard: true,
                 selective: true
             },
+            reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
         });
     } catch (err) {
@@ -235,6 +236,7 @@ scene.on('text', async ctx => {
                 remove_keyboard: true,
                 selective: true
             },
+            reply_to_message_id: ctx.message?.message_id,
             disable_notification: true,
         });
 

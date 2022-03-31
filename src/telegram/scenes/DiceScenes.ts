@@ -45,6 +45,7 @@ scene.enter(async ctx => {
             resize_keyboard: true,
             selective: true,
         },
+        reply_to_message_id: ctx.message?.message_id,
         disable_notification: true
     });
 
