@@ -33,7 +33,7 @@ const launchCallback = async () => {
 }
 
 bot.use(session({
-    ttl: 60 * 10,
+    ttl: 60 * 5, // 60 sec * 5 = 5 min
 }));
 bot.use(stage.middleware());
 

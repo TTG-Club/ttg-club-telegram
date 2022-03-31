@@ -133,7 +133,7 @@ const trySendSpellFromSession = async (ctx: IBot.TContext, name: string) => {
 }
 
 scene.enter(async ctx => {
-    await ctx.reply(`${ctx.from?.username}, введи название заклинания (минимум 3 буквы)`, {
+    await ctx.reply('Введи название заклинания (минимум 3 буквы)', {
         reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
         disable_notification: true,
         reply_to_message_id: ctx.message?.message_id
