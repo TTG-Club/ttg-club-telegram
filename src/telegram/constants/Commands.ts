@@ -28,15 +28,15 @@ export const COMMANDS_LIST: IBot.ICommands = {
         description: 'О боте',
         fullDescription: `/${ COMMAND_NAME.ABOUT } - Небольшая информация о боте.`
     },
-    [COMMAND_NAME.INLINE]: {
-        command: COMMAND_NAME.INLINE,
-        description: 'Инлайн команды',
-        fullDescription: `/${ COMMAND_NAME.INLINE } - Помощь по инлайн командам`
-    },
     [COMMAND_NAME.HELP]: {
         command: COMMAND_NAME.HELP,
         description: 'Помощь',
         fullDescription: `/${ COMMAND_NAME.HELP } - Описание команд.`
+    },
+    [COMMAND_NAME.INLINE]: {
+        command: COMMAND_NAME.INLINE,
+        description: 'Инлайн команды',
+        fullDescription: `/${ COMMAND_NAME.INLINE } - Помощь по инлайн командам`
     },
 }
 
