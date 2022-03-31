@@ -6,7 +6,7 @@ import {
 import config from '../.config';
 
 export default class SpellsMiddleware {
-    getSpellMessage = (spell: NSpell.ISpell): {
+    getSpellMessage = (spell: NSpell.ISpell, removeDescriptionHTML = false): {
         messages: string[],
         url: string
     } => {
@@ -39,12 +39,20 @@ export default class SpellsMiddleware {
         updateMsg(this.getClasses(spell.classes));
 
         this.getEntries(spell.entries).forEach(str => {
-            updateMsg(`\n\n${ str }`)
+            updateMsg(`\n\n${ removeDescriptionHTML ? stripHtml(str).result : str }`)
         });
 
         if (spell?.entriesHigherLevel) {
             this.getEntries(spell.entriesHigherLevel.entries).forEach((str, index) => {
-                updateMsg(`\n\n${ !index ? '<b>На больших уровнях: </b>' : '' }${ str }`)
+                const entity = `${ !index ? '<b>На больших уровнях: </b>' : '' }${ str }`;
+
+                if (removeDescriptionHTML) {
+                    updateMsg(`\n\n${stripHtml(entity).result}`);
+
+                    return;
+                }
+
+                updateMsg(`\n\n${entity}`)
             });
         }
 

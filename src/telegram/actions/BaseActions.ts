@@ -109,8 +109,4 @@ bot.action(/.*/, async ctx => {
     await ctx.answerCbQuery();
 });
 
-bot.inlineQuery(/.*/, async ctx => {
-    await ctx.answerInlineQuery([])
-})
-
 export default bot;
