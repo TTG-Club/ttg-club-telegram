@@ -142,8 +142,6 @@ scene.on('text', async ctx => {
                 disable_notification: true
             });
 
-            await ctx.scene.reenter();
-
             return;
         }
 
@@ -187,7 +185,7 @@ scene.on('text', async ctx => {
         if (spellList.length > 10) {
             await ctx.replyWithHTML(
                 `Я нашел слишком много заклинаний, где упоминается <b>«${ value }»</b>...`
-                + 'попробуй уточнить название',
+                + ' попробуй уточнить название',
                 {
                     reply_markup: {
                         remove_keyboard: true,
@@ -196,8 +194,6 @@ scene.on('text', async ctx => {
                     disable_notification: true,
                 }
             );
-
-            await ctx.scene.reenter();
 
             return;
         }
@@ -208,18 +204,16 @@ scene.on('text', async ctx => {
 
             await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`, {
                 reply_markup: {
-                    ...getSpellListKeyboard(ctx.scene.session.state.spellList),
+                    ...getSpellListKeyboard(spellList),
                     input_field_placeholder: 'Название...',
-                    resize_keyboard: true,
                     selective: true,
+                    resize_keyboard: true
                 },
                 disable_notification: true,
             });
 
             await ctx.reply('Выбери подходящее из этого списка', {
-                reply_markup: {
-                    ...Markup.inlineKeyboard([ EXIT_BUTTON ])
-                },
+                reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
                 disable_notification: true
             })
 
@@ -233,8 +227,6 @@ scene.on('text', async ctx => {
             },
             disable_notification: true,
         });
-
-        await ctx.scene.reenter();
     } catch (err) {
         console.error(err);
 

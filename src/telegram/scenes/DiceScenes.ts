@@ -83,8 +83,6 @@ scene.on('text', async ctx => {
                 disable_notification: true,
             });
 
-            await ctx.scene.reenter();
-
             return;
         }
 
