@@ -24,8 +24,11 @@ const EXIT_BUTTON: CallbackButton[] = [
 const leaveScene = async (ctx: IBot.TContext) => {
     await ctx.reply('Ты вышел из режима поиска заклинания', {
         reply_markup: {
-            remove_keyboard: true
-        }
+            remove_keyboard: true,
+            selective: true,
+        },
+        disable_notification: true,
+        reply_to_message_id: ctx.message?.message_id
     });
 
     await ctx.scene.leave();
@@ -41,8 +44,16 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
     try {
         for (let i = 0; i < messages.length; i++) {
             let extra: Extra = {
-                disable_web_page_preview: true
+                disable_web_page_preview: true,
+                disable_notification: true,
             };
+
+            if (!i) {
+                extra = {
+                    ...extra,
+                    reply_to_message_id: ctx.message?.message_id
+                }
+            }
 
             if (i === messages.length - 1) {
                 extra = {
@@ -63,13 +74,24 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
 
         for (let i = 0; i < messages.length; i++) {
             let extra: Extra = {
-                disable_web_page_preview: true
+                disable_web_page_preview: true,
+                disable_notification: true,
             };
+
+            if (!i) {
+                extra = {
+                    ...extra,
+                    reply_to_message_id: ctx.message?.message_id
+                }
+            }
 
             if (i === messages.length - 1) {
                 extra = {
                     ...extra,
-                    reply_markup: { remove_keyboard: true }
+                    reply_markup: {
+                        remove_keyboard: true,
+                        selective: true
+                    }
                 }
             }
 
@@ -82,7 +104,9 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
                 ...Markup.inlineKeyboard([[
                     Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
                 ]])
-            }
+            },
+            disable_notification: true,
+            reply_to_message_id: ctx.message?.message_id
         });
         await leaveScene(ctx);
     }
@@ -109,10 +133,11 @@ const trySendSpellFromSession = async (ctx: IBot.TContext, name: string) => {
 }
 
 scene.enter(async ctx => {
-    await ctx.reply(
-        'Введи название заклинания (минимум 3 буквы)',
-        Markup.inlineKeyboard([ EXIT_BUTTON ]).extra()
-    );
+    await ctx.reply(`${ctx.from?.username}, введи название заклинания (минимум 3 буквы)`, {
+        reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
+        disable_notification: true,
+        reply_to_message_id: ctx.message?.message_id
+    });
 });
 
 scene.on('text', async ctx => {
@@ -120,7 +145,8 @@ scene.on('text', async ctx => {
         if (!ctx.message || !('text' in ctx.message)) {
             await ctx.reply('Произошла какая-то ошибка...', {
                 reply_markup: {
-                    remove_keyboard: true
+                    remove_keyboard: true,
+                    selective: true
                 }
             });
 
@@ -138,8 +164,11 @@ scene.on('text', async ctx => {
         if (ctx.message.text.length < 3) {
             await ctx.reply('Название слишком короткое', {
                 reply_markup: {
-                    remove_keyboard: true
-                }
+                    remove_keyboard: true,
+                    selective: true
+                },
+                disable_notification: true,
+                reply_to_message_id: ctx.message?.message_id
             });
 
             await ctx.scene.reenter();
@@ -189,7 +218,12 @@ scene.on('text', async ctx => {
                 `Я нашел слишком много заклинаний, где упоминается <b>«${ value }»</b>...`
                 + 'попробуй уточнить название',
                 {
-                    reply_markup: { remove_keyboard: true }
+                    reply_markup: {
+                        remove_keyboard: true,
+                        selective: true
+                    },
+                    disable_notification: true,
+                    reply_to_message_id: ctx.message?.message_id
                 }
             );
 
@@ -202,22 +236,31 @@ scene.on('text', async ctx => {
             // eslint-disable-next-line no-param-reassign
             ctx.scene.session.state.spellList = spellList;
 
-            await ctx.replyWithHTML(
-                // eslint-disable-next-line max-len
-                `Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`,
-                getSpellListMarkup(ctx.scene.session.state.spellList).extra()
-            );
+            await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`, {
+                reply_markup: getSpellListMarkup(ctx.scene.session.state.spellList)
+                    .selective(true),
+                disable_notification: true,
+                reply_to_message_id: ctx.message?.message_id
+            });
 
             await ctx.reply('Выбери подходящее из этого списка', {
                 reply_markup: {
                     ...Markup.inlineKeyboard([ EXIT_BUTTON ])
-                }
+                },
+                disable_notification: true
             })
 
             return;
         }
 
-        await ctx.reply('Я не смог найти такое заклинание...');
+        await ctx.reply('Я не смог найти такое заклинание...', {
+            reply_markup: {
+                remove_keyboard: true,
+                selective: true
+            },
+            disable_notification: true,
+            reply_to_message_id: ctx.message?.message_id
+        });
 
         await ctx.scene.reenter();
     } catch (err) {
@@ -225,8 +268,11 @@ scene.on('text', async ctx => {
 
         await ctx.reply('Что-то пошло не так... попробуй запустить команду еще раз', {
             reply_markup: {
-                remove_keyboard: true
-            }
+                remove_keyboard: true,
+                selective: true
+            },
+            disable_notification: true,
+            reply_to_message_id: ctx.message?.message_id
         });
 
         await leaveScene(ctx);
@@ -236,19 +282,7 @@ scene.on('text', async ctx => {
 scene.action(ACTIONS.ExitFromSearch, async ctx => {
     await ctx.answerCbQuery();
 
-    await ctx.reply('Ты вышел из режима поиска заклинания', {
-        reply_markup: {
-            remove_keyboard: true
-        }
-    });
-
-    await ctx.scene.leave();
-});
-
-scene.on('message', async ctx => {
-    await ctx.reply('Это не похоже на название заклинания 🙃');
-
-    await ctx.scene.reenter();
+    await leaveScene(ctx);
 });
 
 export default scene;

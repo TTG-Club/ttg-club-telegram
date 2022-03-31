@@ -28,16 +28,17 @@ const getDiceKeyBoard = () => Markup
             getDiceBtn('d20'),
             getDiceBtn('пре')
         ]
-    ]).extra()
+    ])
 
 const scene = new BaseScene<IBot.TContext>('diceRoll');
 const diceRoll = new DiceRollerMiddleware();
 
 scene.enter(async ctx => {
-    await ctx.reply(
-        'Ты вошел в режим броска кубиков.\n\nВыбирай кубик на клавиатуре или отправь мне формулу',
-        getDiceKeyBoard()
-    );
+    await ctx.reply('Ты вошел в режим броска кубиков.\n\nВыбирай кубик на клавиатуре или отправь мне формулу', {
+        reply_markup: getDiceKeyBoard().selective(true),
+        reply_to_message_id: ctx.message?.message_id,
+        disable_notification: true
+    });
 
     await ctx.reply('Держи ссылку на подсказку, чтобы знать как пишутся формулы ☺️', {
         reply_markup: {
@@ -47,13 +48,16 @@ scene.enter(async ctx => {
                     'https://dice-roller.github.io/documentation/guide/notation/'
                 )
             ], EXIT_BUTTON ])
-        }
+        },
+        disable_notification: true
     })
 });
 
 scene.on('text', async ctx => {
     if (!ctx.message || !('text' in ctx.message)) {
-        await ctx.reply('Произошла какая-то ошибка...');
+        await ctx.reply('Произошла какая-то ошибка...', {
+            disable_notification: true,
+        });
 
         await ctx.scene.reenter();
 
@@ -67,7 +71,9 @@ scene.on('text', async ctx => {
             await ctx.reply('Произошла ошибка... попробуй еще раз или напиши нам в Discord-канал', {
                 reply_markup: Markup.inlineKeyboard([
                     [ Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z') ]
-                ])
+                ]),
+                disable_notification: true,
+                reply_to_message_id: ctx.message?.message_id,
             });
 
             await ctx.scene.reenter();
@@ -75,9 +81,10 @@ scene.on('text', async ctx => {
             return;
         }
 
-        await ctx.deleteMessage();
         await ctx.replyWithHTML(msg, {
-            reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ])
+            reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
+            disable_notification: true,
+            reply_to_message_id: ctx.message?.message_id,
         });
     } catch (err) {
         await ctx.reply('В формуле броска кубиков ошибка.\n\nНе забывай про подсказку, если не получается', {
@@ -86,7 +93,9 @@ scene.on('text', async ctx => {
                     'Dice Roller',
                     'https://dice-roller.github.io/documentation/guide/notation/'
                 )
-            ], EXIT_BUTTON ])
+            ], EXIT_BUTTON ]),
+            disable_notification: true,
+            reply_to_message_id: ctx.message?.message_id,
         });
     }
 });
@@ -95,7 +104,12 @@ scene.action(ACTIONS.ExitFromRoller, async ctx => {
     await ctx.answerCbQuery();
 
     await ctx.reply('Ты закончил бросать кубики', {
-        reply_markup: { remove_keyboard: true }
+        reply_markup: {
+            remove_keyboard: true,
+            selective: true
+        },
+        disable_notification: true,
+        reply_to_message_id: ctx.message?.message_id,
     });
 
     await ctx.scene.leave();

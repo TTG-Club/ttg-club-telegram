@@ -54,26 +54,26 @@ export default class SpellsMiddleware {
         };
     }
 
-    private getDamageInflicts = (list: string[]): string => list.map((item: string) => (
+    getDamageInflicts = (list: string[]): string => list.map((item: string) => (
         item in DAMAGE_INFLICTS
             ? DAMAGE_INFLICTS[item as keyof typeof DAMAGE_INFLICTS]
             : item)).join('; ');
 
-    private getSchool = (name: string): string => (name in SCHOOLS
+    getSchool = (name: string): string => (name in SCHOOLS
         ? SCHOOLS[name as keyof typeof SCHOOLS]
         : name);
 
-    private getLevel = (level: number): string => (level ? `${ level } уровень` : 'Заговор');
+    getLevel = (level: number): string => (level ? `${ level } уровень` : 'Заговор');
 
-    private getClass = (name: string): string => (name in CLASSES
+    getClass = (name: string): string => (name in CLASSES
         ? CLASSES[name as keyof typeof CLASSES]
         : name);
 
-    private getSource = (source: string): string => (source in SOURCES
+    getSource = (source: string): string => (source in SOURCES
         ? SOURCES[source as keyof typeof SOURCES]
         : source)
 
-    private getClasses = (classes: NSpell.IClass): string => {
+    getClasses = (classes: NSpell.IClass): string => {
         let res = '';
 
         Object.entries(classes).forEach(([ from, list ]) => {
@@ -97,7 +97,7 @@ export default class SpellsMiddleware {
         return res
     };
 
-    private getTime = (time: NSpell.ITime): string => {
+    getTime = (time: NSpell.ITime): string => {
         const unit = time.unit in TIMES
             ? TIMES[time.unit as keyof typeof TIMES](time.number)
             : time.unit;
@@ -107,9 +107,9 @@ export default class SpellsMiddleware {
             : `${ time.number } ${ unit }`
     }
 
-    private getTimes = (times: NSpell.ITime[]): string => times.map(time => this.getTime(time)).join('; ')
+    getTimes = (times: NSpell.ITime[]): string => times.map(time => this.getTime(time)).join('; ')
 
-    private getComponents = (components: NSpell.IComponents): string => {
+    getComponents = (components: NSpell.IComponents): string => {
         const { v, s, m } = components;
         const res = [];
 
@@ -128,18 +128,18 @@ export default class SpellsMiddleware {
         return res.join(', ');
     }
 
-    private getRange = (range: NSpell.IRange): string => range.raw.toLowerCase()
+    getRange = (range: NSpell.IRange): string => range.raw.toLowerCase()
 
-    private getDuration = (durationList: NSpell.IDuration[]): string => durationList
+    getDuration = (durationList: NSpell.IDuration[]): string => durationList
         .map(duration => duration.raw.toLowerCase())
         .join('; ')
 
-    private getEntries = (entries: string[]): string[] => {
+    getEntries = (entries: string[]): string[] => {
         const tags = [ 'b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'a', 'code', 'pre' ];
         return entries.map((str: string) => stripHtml(str, { ignoreTags: tags })
             .result
             .replaceAll('href="/', `href="${ config.baseURL }/`));
     }
 
-    private getOriginal = (engName: string) => `${ config.baseURL }/spells/${ engName.replaceAll(' ', '_') }`
+    getOriginal = (engName: string) => `${ config.baseURL }/spells/${ engName.replaceAll(' ', '_') }`
 }

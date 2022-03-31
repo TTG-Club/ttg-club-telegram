@@ -42,8 +42,6 @@ bot.start(async ctx => {
 });
 
 bot.action('baseHelp', async ctx => {
-    await ctx.answerCbQuery();
-
     await helpResponse(ctx)
 });
 
@@ -64,5 +62,9 @@ bot.command(COMMAND_NAME.ABOUT, async ctx => {
         }
     })
 });
+
+bot.action(/.*/, async ctx => {
+    await ctx.answerCbQuery();
+})
 
 export default bot;
