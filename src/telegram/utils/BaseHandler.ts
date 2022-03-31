@@ -1,25 +1,9 @@
 import IBot from '../../../typings/TelegramBot';
+import TelegrafHelpers from './TelegrafHelpers';
 
 export default class BaseHandler {
     static leaveScene = async (ctx: IBot.TContext, msg = 'вышел из текущего режима') => {
-        const fullName = ctx.from?.last_name
-            ? `${ ctx.from.first_name } ${ ctx.from.last_name }`
-            : ctx.from?.first_name;
-        const userName = fullName || ctx.from?.username;
-
-        let leaveStr;
-
-        switch (ctx.chat?.type) {
-            case 'group':
-            case 'supergroup':
-                leaveStr = `<a href="tg://user?id=${ ctx.from?.id }">${ userName }</a> ${ msg.trim() }`;
-
-                break;
-            default:
-                leaveStr = `Ты ${ msg.trim() }`
-
-                break;
-        }
+        const leaveStr = `${ TelegrafHelpers.getUserMentionHTMLString(ctx) } ${ msg.trim() }`;
 
         await ctx.reply(leaveStr, {
             reply_markup: {
@@ -28,7 +12,6 @@ export default class BaseHandler {
             },
             parse_mode: 'HTML',
             disable_notification: true,
-            reply_to_message_id: ctx.message?.message_id
         });
 
         await ctx.scene.leave();

@@ -9,6 +9,7 @@ import NSpell from '../../../typings/Spell';
 import HTTPService from '../../utils/HTTPService';
 import SpellsMiddleware from '../../middlewares/SpellsMiddleware';
 import BaseHandler from '../utils/BaseHandler';
+import TelegrafHelpers from '../utils/TelegrafHelpers';
 
 enum ACTIONS {
     ExitFromSearch = 'exitFromSearch',
@@ -24,9 +25,9 @@ const EXIT_BUTTON: CallbackButton[] = [
 
 const LEAVE_MSG = 'вышел(а) из режима поиска заклинания';
 
-const getSpellListMarkup = (spellList: NSpell.ISpell[]) => Markup.keyboard(
-    [ ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ]) ]
-);
+const getSpellListKeyboard = (spellList: NSpell.ISpell[]) => Markup.keyboard([
+    ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ])
+]);
 
 const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
     const { messages, url } = spellsMiddleware.getSpellMessage(spell);
@@ -37,13 +38,6 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
                 disable_web_page_preview: true,
                 disable_notification: true,
             };
-
-            if (!i) {
-                extra = {
-                    ...extra,
-                    reply_to_message_id: ctx.message?.message_id
-                }
-            }
 
             if (i === messages.length - 1) {
                 extra = {
@@ -68,13 +62,6 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
                 disable_notification: true,
             };
 
-            if (!i) {
-                extra = {
-                    ...extra,
-                    reply_to_message_id: ctx.message?.message_id
-                }
-            }
-
             if (i === messages.length - 1) {
                 extra = {
                     ...extra,
@@ -96,7 +83,6 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
                 ]])
             },
             disable_notification: true,
-            reply_to_message_id: ctx.message?.message_id
         });
         await BaseHandler.leaveScene(ctx, LEAVE_MSG);
     }
@@ -123,10 +109,12 @@ const trySendSpellFromSession = async (ctx: IBot.TContext, name: string) => {
 }
 
 scene.enter(async ctx => {
-    await ctx.reply('Введи название заклинания (минимум 3 буквы)', {
+    const userName = TelegrafHelpers.getUserMentionHTMLString(ctx);
+
+    await ctx.replyWithHTML(`${ userName } вошел(ла) в режим поиска заклинаний.`
+        + '\n\nВведи название заклинания (минимум 3 буквы)', {
         reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
         disable_notification: true,
-        reply_to_message_id: ctx.message?.message_id
     });
 });
 
@@ -151,8 +139,7 @@ scene.on('text', async ctx => {
                     remove_keyboard: true,
                     selective: true
                 },
-                disable_notification: true,
-                reply_to_message_id: ctx.message?.message_id
+                disable_notification: true
             });
 
             await ctx.scene.reenter();
@@ -207,7 +194,6 @@ scene.on('text', async ctx => {
                         selective: true
                     },
                     disable_notification: true,
-                    reply_to_message_id: ctx.message?.message_id
                 }
             );
 
@@ -221,10 +207,13 @@ scene.on('text', async ctx => {
             ctx.scene.session.state.spellList = spellList;
 
             await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`, {
-                reply_markup: getSpellListMarkup(ctx.scene.session.state.spellList)
-                    .selective(true),
+                reply_markup: {
+                    ...getSpellListKeyboard(ctx.scene.session.state.spellList),
+                    input_field_placeholder: 'Название...',
+                    selective: true,
+                    resize_keyboard: true,
+                },
                 disable_notification: true,
-                reply_to_message_id: ctx.message?.message_id
             });
 
             await ctx.reply('Выбери подходящее из этого списка', {
@@ -243,7 +232,6 @@ scene.on('text', async ctx => {
                 selective: true
             },
             disable_notification: true,
-            reply_to_message_id: ctx.message?.message_id
         });
 
         await ctx.scene.reenter();
@@ -256,7 +244,6 @@ scene.on('text', async ctx => {
                 selective: true
             },
             disable_notification: true,
-            reply_to_message_id: ctx.message?.message_id
         });
 
         await BaseHandler.leaveScene(ctx, LEAVE_MSG);
