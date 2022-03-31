@@ -130,7 +130,7 @@ scene.on('text', async ctx => {
         }
 
         const input: string = ctx.message.text.trim();
-        const match = input.match(/(?<spellName>.+?)(\[.+?])$/i);
+        const match = input.match(/^(?<spellName>.+?)(\[.+?])$/i);
         const matchedName = match?.groups?.spellName?.trim();
 
         // eslint-disable-next-line no-param-reassign
