@@ -10,7 +10,7 @@ enum ACTIONS {
 
 const EXIT_BUTTON: CallbackButton[] = [ Markup.callbackButton('Закончить броски', ACTIONS.ExitFromRoller) ];
 
-const LEAVE_MSG = 'закончил бросать кубики';
+const LEAVE_MSG = 'закончил(а) бросать кубики';
 
 const getDiceBtn = (dice: string): Button => Markup.button(`${ dice }`)
 

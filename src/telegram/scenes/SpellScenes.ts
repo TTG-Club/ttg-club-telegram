@@ -22,7 +22,7 @@ const EXIT_BUTTON: CallbackButton[] = [
     Markup.callbackButton('Закончить поиск заклинания', ACTIONS.ExitFromSearch)
 ];
 
-const LEAVE_MSG = 'вышел из режима поиска заклинания';
+const LEAVE_MSG = 'вышел(а) из режима поиска заклинания';
 
 const getSpellListMarkup = (spellList: NSpell.ISpell[]) => Markup.keyboard(
     [ ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ]) ]
