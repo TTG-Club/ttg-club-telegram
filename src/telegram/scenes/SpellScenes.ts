@@ -102,8 +102,13 @@ scene.enter(async ctx => {
 
     await ctx.replyWithHTML(`${ userName } вошел(ла) в режим поиска заклинаний.`
         + '\n\nВведи название заклинания (минимум 3 буквы)', {
-        reply_markup: Markup.keyboard([ EXIT_BUTTON ]),
+        reply_to_message_id: ctx.message?.message_id,
         disable_notification: true,
+        reply_markup: {
+            keyboard: [ EXIT_BUTTON ],
+            selective: true,
+            resize_keyboard: true
+        },
     });
 });
 
