@@ -1,19 +1,20 @@
 import { BaseScene, Markup } from 'telegraf';
-import { CallbackButton } from 'telegraf/typings/markup';
+import { Button } from 'telegraf/typings/markup';
 import IBot from '../../../typings/TelegramBot';
 import DiceRollerMiddleware from '../../middlewares/DiceRollerMiddleware';
 import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
 
 enum ACTIONS {
-    ExitFromRoller = 'exitFromDice',
+    ExitFromRoller = '❌ Закончить броски',
 }
 
-const EXIT_BUTTON: CallbackButton[] = [ Markup.callbackButton('Закончить броски', ACTIONS.ExitFromRoller) ];
+const EXIT_BUTTON: Button[] = [ Markup.button(ACTIONS.ExitFromRoller) ];
 
 const LEAVE_MSG = 'закончил(а) бросать кубики';
 
-const getDiceKeyboard = () => Markup.keyboard([
+const getDiceKeyboard = () => ([
+    EXIT_BUTTON,
     [
         Markup.button('d2'),
         Markup.button('d4'),
@@ -39,26 +40,27 @@ scene.enter(async ctx => {
 
     await ctx.replyWithHTML(`${ userName } вошел(ла) в режим броска кубиков.`
         + '\n\nВыбирай кубик на клавиатуре или отправь мне формулу', {
+        reply_to_message_id: ctx.message?.message_id,
+        disable_notification: true,
         reply_markup: {
-            ...getDiceKeyboard(),
+            keyboard: getDiceKeyboard(),
             input_field_placeholder: 'Напр., «2d20»...',
             resize_keyboard: true,
             selective: true,
         },
-        reply_to_message_id: ctx.message?.message_id,
-        disable_notification: true
     });
 
     await ctx.reply('Держи ссылку на подсказку, чтобы знать как пишутся формулы ☺️', {
+        reply_to_message_id: ctx.message?.message_id,
+        disable_notification: true,
         reply_markup: {
             ...Markup.inlineKeyboard([[
                 Markup.urlButton(
-                    'Dice Roller',
+                    'Подсказка',
                     'https://dice-roller.github.io/documentation/guide/notation/'
                 )
-            ], EXIT_BUTTON ])
+            ]])
         },
-        disable_notification: true
     })
 });
 
@@ -73,41 +75,43 @@ scene.on('text', async ctx => {
         return;
     }
 
+    if (ctx.message.text === ACTIONS.ExitFromRoller) {
+        await BaseHandler.leaveScene(ctx, LEAVE_MSG);
+
+        return;
+    }
+
     try {
         const msg = await diceRoll.getDiceMsg(ctx.message.text);
 
         if (!msg) {
             await ctx.reply('Произошла ошибка... попробуй еще раз или напиши нам в Discord-канал', {
+                reply_to_message_id: ctx.message.message_id,
+                disable_notification: true,
                 reply_markup: Markup.inlineKeyboard([
                     [ Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z') ]
                 ]),
-                disable_notification: true,
             });
 
             return;
         }
 
         await ctx.replyWithHTML(msg, {
-            reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
+            reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
         });
     } catch (err) {
         await ctx.reply('В формуле броска кубиков ошибка.\n\nНе забывай про подсказку, если не получается', {
+            reply_to_message_id: ctx.message.message_id,
+            disable_notification: true,
             reply_markup: Markup.inlineKeyboard([[
                 Markup.urlButton(
-                    'Dice Roller',
+                    'Подсказка',
                     'https://dice-roller.github.io/documentation/guide/notation/'
                 )
-            ], EXIT_BUTTON ]),
-            disable_notification: true,
+            ]]),
         });
     }
 });
-
-scene.action(ACTIONS.ExitFromRoller, async ctx => {
-    await ctx.answerCbQuery();
-
-    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
-})
 
 export default scene

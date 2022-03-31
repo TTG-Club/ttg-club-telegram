@@ -6,13 +6,13 @@ export default class BaseHandler {
         const leaveStr = `${ TelegrafHelpers.getUserMentionHTMLString(ctx) } ${ msg.trim() }`;
 
         await ctx.reply(leaveStr, {
+            reply_to_message_id: ctx.message?.message_id,
+            disable_notification: true,
             reply_markup: {
                 remove_keyboard: true,
                 selective: true,
             },
             parse_mode: 'HTML',
-            disable_notification: true,
-            reply_to_message_id: ctx.message?.message_id,
         });
 
         await ctx.scene.leave();

@@ -3,7 +3,7 @@ import {
     Markup
 } from 'telegraf';
 import { Extra } from 'telegraf/typings/telegram-types';
-import { CallbackButton } from 'telegraf/typings/markup';
+import { Button } from 'telegraf/typings/markup';
 import IBot from '../../../typings/TelegramBot';
 import NSpell from '../../../typings/Spell';
 import HTTPService from '../../utils/HTTPService';
@@ -12,22 +12,23 @@ import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
 
 enum ACTIONS {
-    ExitFromSearch = 'exitFromSearch',
+    ExitFromSearch = '❌ Закончить поиск',
 }
 
 const scene = new BaseScene<IBot.TContext>('findSpell');
 const http: HTTPService = new HTTPService();
 const spellsMiddleware = new SpellsMiddleware();
 
-const EXIT_BUTTON: CallbackButton[] = [
-    Markup.callbackButton('Закончить поиск заклинания', ACTIONS.ExitFromSearch)
+const EXIT_BUTTON: Button[] = [
+    Markup.button(ACTIONS.ExitFromSearch)
 ];
 
 const LEAVE_MSG = 'вышел(а) из режима поиска заклинания';
 
-const getSpellListKeyboard = (spellList: NSpell.ISpell[]) => Markup.keyboard([
+const getSpellListKeyboard = (spellList: NSpell.ISpell[]) => [
+    EXIT_BUTTON,
     ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ])
-]);
+];
 
 const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
     const { messages, url } = spellsMiddleware.getSpellMessage(spell);
@@ -35,6 +36,7 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
     try {
         for (let i = 0; i < messages.length; i++) {
             let extra: Extra = {
+                reply_to_message_id: ctx.message?.message_id,
                 disable_web_page_preview: true,
                 disable_notification: true,
             };
@@ -42,13 +44,9 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
             if (i === messages.length - 1) {
                 extra = {
                     ...extra,
-                    reply_markup: {
-                        ...Markup.inlineKeyboard([
-                            [ Markup.urlButton('Оригинал на D&D5 Club', url) ],
-                            EXIT_BUTTON
-                        ])
-                    },
-                    reply_to_message_id: ctx.message?.message_id,
+                    reply_markup: Markup.inlineKeyboard([
+                        [ Markup.urlButton('Оригинал на D&D5 Club', url) ]
+                    ]),
                 }
             }
 
@@ -58,34 +56,23 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
         console.error(err);
 
         for (let i = 0; i < messages.length; i++) {
-            let extra: Extra = {
+            const extra: Extra = {
+                reply_to_message_id: ctx.message?.message_id,
                 disable_web_page_preview: true,
                 disable_notification: true,
             };
-
-            if (i === messages.length - 1) {
-                extra = {
-                    ...extra,
-                    reply_markup: {
-                        remove_keyboard: true,
-                        selective: true
-                    },
-                    reply_to_message_id: ctx.message?.message_id,
-                }
-            }
 
             await ctx.reply(messages[i], extra);
         }
 
         await ctx.reply('Произошла ошибка, поэтому я выслал тебе сырую версию сообщения заклинания... '
             + 'пожалуйста, сообщи нам об этом в Discord', {
-            reply_markup: {
-                ...Markup.inlineKeyboard([[
-                    Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
-                ]])
-            },
+            reply_markup: Markup.inlineKeyboard([[
+                Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
+            ]]),
             disable_notification: true,
         });
+
         await BaseHandler.leaveScene(ctx, LEAVE_MSG);
     }
 }
@@ -115,7 +102,7 @@ scene.enter(async ctx => {
 
     await ctx.replyWithHTML(`${ userName } вошел(ла) в режим поиска заклинаний.`
         + '\n\nВведи название заклинания (минимум 3 буквы)', {
-        reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
+        reply_markup: Markup.keyboard([ EXIT_BUTTON ]),
         disable_notification: true,
     });
 });
@@ -132,18 +119,21 @@ scene.on('text', async ctx => {
 
         if (ctx.message.text.length < 3) {
             await ctx.reply('Название слишком короткое', {
-                reply_markup: {
-                    remove_keyboard: true,
-                    selective: true
-                },
                 reply_to_message_id: ctx.message.message_id,
-                disable_notification: true
+                disable_notification: true,
             });
 
             return;
         }
 
         const input: string = ctx.message.text.trim();
+
+        if (input === ACTIONS.ExitFromSearch) {
+            await BaseHandler.leaveScene(ctx, LEAVE_MSG);
+
+            return;
+        }
+
         const match = input.match(/(?<spellName>.+?)(\[.+?])$/i);
         const matchedName = match?.groups?.spellName?.trim();
 
@@ -185,10 +175,6 @@ scene.on('text', async ctx => {
                 `Я нашел слишком много заклинаний, где упоминается <b>«${ value }»</b>...`
                 + ' попробуй уточнить название',
                 {
-                    reply_markup: {
-                        remove_keyboard: true,
-                        selective: true
-                    },
                     reply_to_message_id: ctx.message.message_id,
                     disable_notification: true,
                 }
@@ -201,30 +187,22 @@ scene.on('text', async ctx => {
             // eslint-disable-next-line no-param-reassign
             ctx.scene.session.state.spellList = spellList;
 
-            await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`, {
+            await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`
+                + '\nВыбери подходящее из этого списка', {
+                reply_to_message_id: ctx.message.message_id,
+                disable_notification: true,
                 reply_markup: {
-                    ...getSpellListKeyboard(spellList),
+                    keyboard: getSpellListKeyboard(spellList),
                     input_field_placeholder: 'Название...',
                     selective: true,
                     resize_keyboard: true
                 },
-                reply_to_message_id: ctx.message.message_id,
-                disable_notification: true,
-            });
-
-            await ctx.reply('Выбери подходящее из этого списка', {
-                reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
-                disable_notification: true
             });
 
             return;
         }
 
-        await ctx.reply('Я не смог найти такое заклинание...', {
-            reply_markup: {
-                remove_keyboard: true,
-                selective: true
-            },
+        await ctx.reply('Я не смог найти такое заклинание... попробуй другое название', {
             reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
         });
@@ -232,22 +210,12 @@ scene.on('text', async ctx => {
         console.error(err);
 
         await ctx.reply('Что-то пошло не так... попробуй запустить команду еще раз', {
-            reply_markup: {
-                remove_keyboard: true,
-                selective: true
-            },
             reply_to_message_id: ctx.message?.message_id,
             disable_notification: true,
         });
 
         await BaseHandler.leaveScene(ctx, LEAVE_MSG);
     }
-});
-
-scene.action(ACTIONS.ExitFromSearch, async ctx => {
-    await ctx.answerCbQuery();
-
-    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 });
 
 export default scene;
