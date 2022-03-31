@@ -12,7 +12,7 @@ export default class BaseHandler {
         switch (ctx.chat?.type) {
             case 'group':
             case 'supergroup':
-                leaveStr = `[${ userName }](tg://user?id=${ ctx.from?.id }) ${ msg.trim() }`;
+                leaveStr = `<a href="tg://user?id=${ ctx.from?.id }">${ userName }</a> ${ msg.trim() }`;
 
                 break;
             default:
@@ -26,7 +26,7 @@ export default class BaseHandler {
                 remove_keyboard: true,
                 selective: true,
             },
-            parse_mode: 'MarkdownV2',
+            parse_mode: 'HTML',
             disable_notification: true,
             reply_to_message_id: ctx.message?.message_id
         });
