@@ -17,9 +17,11 @@ const helpResponse = async (ctx: TelegrafContext) => {
         const defaultCommands = _.cloneDeep(COMMANDS_LIST);
         const modifiedList = Object.values(defaultCommands).map(item => (
             `${ COMMANDS_LIST[item.command].fullDescription }`
-        ))
+        ));
 
-        let msg = '<b>Список доступных команд:</b>\n';
+        let msg = 'Обычные команды нужно отправлять в личные сообщения с ботом или в чат, где добавлен этот бот, '
+            + `например: /${COMMAND_NAME.HELP}&#10;`
+            + '&#10;<b>Список доступных команд:</b>&#10;';
 
         modifiedList.forEach((cmd: string) => {
             msg += `\n${ cmd }`;
@@ -41,21 +43,19 @@ const inlineResponse = async (ctx: TelegrafContext) => {
             `${ index + 1 }. ${ INLINE_COMMAND_LIST[item.command].fullDescription }`
         ))
 
-        let msg = '<b>Список доступных команд:</b>\n';
+        let msg = 'Инлайн команды можно использовать в личных сообщениях Telegram с другими пользователями.&#10;'
+            + 'Чтобы воспользоваться такой командой, начни вводить строку, например:&#10;'
+            + `&#10;<i>@dnd5club_bot ${ INLINE_COMMAND_NAME.SPELL } врата</i>&#10;`
+            + '&#10;<b>Список доступных команд:</b>&#10;';
 
         modifiedList.forEach((cmd: string) => {
             msg += `\n${ cmd }`;
         });
 
-        await ctx.replyWithHTML(
-            'Такие команды можно использовать в личных сообщениях Telegram с другими пользователями'
-            + ` - просто вводите строку, например: <b>@dnd5club_bot ${ INLINE_COMMAND_NAME.SPELL } врата</b>`
-            + `\n\n${ msg }`,
-            {
-                reply_to_message_id: ctx.message?.message_id,
-                disable_notification: true
-            }
-        );
+        await ctx.replyWithHTML(msg, {
+            reply_to_message_id: ctx.message?.message_id,
+            disable_notification: true
+        });
     } catch (err) {
         console.error(err);
     }
@@ -93,15 +93,13 @@ bot.command(COMMAND_NAME.ABOUT, async ctx => {
     )
 });
 
-bot.command(COMMAND_NAME.INLINE, async ctx => {
-    await inlineResponse(ctx);
-});
-
 bot.action('baseHelp', async ctx => {
+    await inlineResponse(ctx);
     await helpResponse(ctx);
 });
 
 bot.help(async ctx => {
+    await inlineResponse(ctx);
     await helpResponse(ctx);
 });
 
