@@ -9,6 +9,10 @@ enum ACTIONS {
     ExitFromRoller = '❌ Закончить броски',
 }
 
+enum CALLBACK_ACTIONS {
+    ExitFromRoller = 'exitFromRoller'
+}
+
 const EXIT_BUTTON: Button[] = [ Markup.button(ACTIONS.ExitFromRoller) ];
 
 const LEAVE_MSG = 'закончил(а) бросать кубики';
@@ -104,14 +108,18 @@ scene.on('text', async ctx => {
         await ctx.reply('В формуле броска кубиков ошибка.\n\nНе забывай про подсказку, если не получается', {
             reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
-            reply_markup: Markup.inlineKeyboard([[
-                Markup.urlButton(
-                    'Подсказка',
-                    'https://dnd5.club/telegram_bot'
-                )
-            ]]),
+            reply_markup: Markup.inlineKeyboard([
+                [ Markup.urlButton('Подсказка', 'https://dnd5.club/telegram_bot') ],
+                [ Markup.callbackButton('Закончить броски', CALLBACK_ACTIONS.ExitFromRoller) ]
+            ]),
         });
     }
+});
+
+scene.action(CALLBACK_ACTIONS.ExitFromRoller, async ctx => {
+    await ctx.answerCbQuery();
+
+    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 });
 
 export default scene
