@@ -107,7 +107,7 @@ scene.on('text', async ctx => {
             reply_markup: Markup.inlineKeyboard([[
                 Markup.urlButton(
                     'Подсказка',
-                    'https://dice-roller.github.io/documentation/guide/notation/'
+                    'https://dnd5.club/telegram_bot'
                 )
             ]]),
         });
