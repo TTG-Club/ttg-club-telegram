@@ -53,7 +53,7 @@ bot.inlineQuery(new RegExp(`${ INLINE_COMMAND_NAME.SPELL } (.*)`), async ctx => 
             ? '(ритуал)'
             : '';
 
-        let msg = spellsMiddleware.getSpellMessage(spell, true).messages.join();
+        let msg = spellsMiddleware.getSpellMessage(spell).messages.join();
 
         const isBig = msg.length > 3750;
 
@@ -62,6 +62,7 @@ bot.inlineQuery(new RegExp(`${ INLINE_COMMAND_NAME.SPELL } (.*)`), async ctx => 
                 + ' сообщение и может быть обрезано, пожалуйста, посмотрите оригинал на сайте по кнопке ниже или'
                 + ' напишите боту в личные сообщения</b> 😉';
 
+            msg = spellsMiddleware.getSpellMessage(spell, true).messages.join();
             msg = msg.slice(0, 3750).trim() + add;
         }
 
