@@ -1,13 +1,13 @@
 {
     "name": "tg-bot-server",
     "description": "The server for telegram bot",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "author": "Nikita Charushin <svifty7@gmail.com>",
     "license": "MIT",
     "private": true,
     "scripts": {
         "watch:telegram": "nodemon",
-        "build:prod": "rimraf ./dist && tsc",
+        "build": "rimraf ./dist && tsc",
         "lint": "eslint 'src/**/*.{js,ts}'"
     },
     "dependencies": {

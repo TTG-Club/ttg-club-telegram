@@ -20,6 +20,6 @@ jobs:
                     cd ${{ secrets.DEV_PROJECT_PATH }} >> /dev/null 2>&1
                     git pull >> /dev/null 2>&1
                     npm ci >> /dev/null 2>&1
-                    npm run build:prod >> /dev/null 2>&1
+                    npm run build >> /dev/null 2>&1
                     pm2 reload ecosystem.config.js >> /dev/null 2>&1
                     pm2 save >> /dev/null 2>&1
