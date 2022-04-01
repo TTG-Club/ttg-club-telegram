@@ -27,5 +27,5 @@ export const COMMANDS_LIST: IBot.ICommands = {
         command: COMMAND_NAME.HELP,
         description: 'Помощь',
         fullDescription: `/${ COMMAND_NAME.HELP } - Описание команд.`
-    }
+    },
 }

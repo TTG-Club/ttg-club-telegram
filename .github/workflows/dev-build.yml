@@ -17,11 +17,9 @@ jobs:
                 password: ${{ secrets.SERVER_PASS }}
                 script: |
                     source ~/.bashrc >> /dev/null 2>&1
-                    cd dev-${{ secrets.PROJECT_PATH }} >> /dev/null 2>&1
+                    cd ${{ secrets.DEV_PROJECT_PATH }} >> /dev/null 2>&1
                     git pull >> /dev/null 2>&1
-                    pm2 stop ecosystem.config.js >> /dev/null 2>&1
-                    rm -rf ./node_modules >> /dev/null 2>&1
                     npm ci >> /dev/null 2>&1
-                    npm run build:prod >> /dev/null 2>&1
-                    pm2 start ecosystem.config.js >> /dev/null 2>&1
+                    npm run build >> /dev/null 2>&1
+                    pm2 reload ecosystem.config.js >> /dev/null 2>&1
                     pm2 save >> /dev/null 2>&1
