@@ -85,11 +85,11 @@ bot.command(COMMAND_NAME.ABOUT, async ctx => {
 
     await ctx.reply(
         ABOUT_MESSAGE,
-        getLinksKeyboard()
-            .extra({
-                reply_to_message_id: ctx.message?.message_id
-            })
-            .notifications(false)
+        {
+            reply_to_message_id: ctx.message?.message_id,
+            disable_notification: true,
+            reply_markup: getLinksKeyboard()
+        }
     )
 });
 
