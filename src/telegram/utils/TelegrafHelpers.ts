@@ -5,7 +5,7 @@ export default class TelegrafHelpers {
         const fullName = ctx.from?.last_name
             ? `${ ctx.from.first_name } ${ ctx.from.last_name }`
             : ctx.from?.first_name;
-        const userName = fullName || ctx.from?.username;
+        const userName = ctx.from?.username || fullName;
 
         switch (ctx.chat?.type) {
             case 'group':
