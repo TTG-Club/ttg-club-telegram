@@ -5,7 +5,7 @@ import {
 } from 'telegraf';
 import { TelegrafContext } from 'telegraf/typings/context';
 import {
-    COMMAND_NAME, COMMANDS_LIST, INLINE_COMMAND_LIST, INLINE_COMMAND_NAME
+    COMMAND_NAME, COMMANDS_LIST
 } from '../constants/Commands';
 import IBot from '../../../typings/TelegramBot';
 import { ABOUT_MESSAGE, SOCIAL_LINKS } from '../../locales/about';
@@ -20,7 +20,7 @@ const helpResponse = async (ctx: TelegrafContext) => {
         ));
 
         let msg = 'Обычные команды нужно отправлять в личные сообщения с ботом или в чат, где добавлен этот бот, '
-            + `например: /${COMMAND_NAME.HELP}&#10;`
+            + `например: /${ COMMAND_NAME.HELP }&#10;`
             + '&#10;<b>Список доступных команд:</b>&#10;';
 
         modifiedList.forEach((cmd: string) => {
@@ -38,19 +38,10 @@ const helpResponse = async (ctx: TelegrafContext) => {
 
 const inlineResponse = async (ctx: TelegrafContext) => {
     try {
-        const commands = _.cloneDeep(INLINE_COMMAND_LIST);
-        const modifiedList = Object.values(commands).map((item, index) => (
-            `${ index + 1 }. ${ INLINE_COMMAND_LIST[item.command].fullDescription }`
-        ))
-
-        let msg = 'Инлайн команды можно использовать в личных сообщениях Telegram с другими пользователями.&#10;'
-            + 'Чтобы воспользоваться такой командой, начни вводить строку, например:&#10;'
-            + `&#10;<i>@dnd5club_bot ${ INLINE_COMMAND_NAME.SPELL } врата</i>&#10;`
-            + '&#10;<b>Список доступных команд:</b>&#10;';
-
-        modifiedList.forEach((cmd: string) => {
-            msg += `\n${ cmd }`;
-        });
+        const msg = 'Искать заклинания можно в чатах и личных сообщениях с другими пользователями Telegram, '
+            + 'где бот не добавлен. Чтобы начать поиск, введи название бота и название заклинания.&#10;'
+            + `&#10;<b>Формат:</b> @${ ctx.botInfo?.username } [<i>название заклинания</i>]&#10;`
+            + `&#10;<b>Пример:</b> <i>@${ ctx.botInfo?.username } врата</i>&#10;`;
 
         await ctx.replyWithHTML(msg, {
             reply_to_message_id: ctx.message?.message_id,
@@ -67,7 +58,7 @@ bot.start(async ctx => {
             reply_to_message_id: ctx.message?.message_id,
             reply_markup: Markup.inlineKeyboard(
                 [[
-                    Markup.callbackButton('Список команд', 'baseHelp')
+                    Markup.callbackButton('Список команд', COMMAND_NAME.HELP)
                 ]]
             )
         })
@@ -93,7 +84,7 @@ bot.command(COMMAND_NAME.ABOUT, async ctx => {
     )
 });
 
-bot.action('baseHelp', async ctx => {
+bot.action(COMMAND_NAME.HELP, async ctx => {
     await inlineResponse(ctx);
     await helpResponse(ctx);
 });

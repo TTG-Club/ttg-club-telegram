@@ -1,6 +1,6 @@
 import { Composer, Markup } from 'telegraf';
 import { InlineQueryResult } from 'telegraf/typings/telegram-types';
-import { COMMAND_NAME, INLINE_COMMAND_NAME } from '../constants/Commands';
+import { COMMAND_NAME } from '../constants/Commands';
 import IBot from '../../../typings/TelegramBot';
 import HTTPService from '../../utils/HTTPService';
 import NSpell from '../../../typings/Spell';
@@ -16,14 +16,14 @@ bot.command(COMMAND_NAME.SPELL, async ctx => {
     await ctx.scene.enter('findSpell');
 });
 
-bot.inlineQuery(new RegExp(`${ INLINE_COMMAND_NAME.SPELL } (.*)`), async ctx => {
-    if (!ctx.match || !ctx.match[1]) {
+bot.inlineQuery(/.*/, async ctx => {
+    if (!ctx.inlineQuery?.query) {
         await ctx.answerInlineQuery([]);
 
         return;
     }
 
-    const value: string = ctx.match[1];
+    const value: string = ctx.inlineQuery.query;
 
     if (!value || value.length < 3) {
         await ctx.answerInlineQuery([]);

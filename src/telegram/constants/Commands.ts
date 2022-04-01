@@ -7,10 +7,6 @@ export enum COMMAND_NAME {
     ABOUT = 'about'
 }
 
-export enum INLINE_COMMAND_NAME {
-    SPELL= 'заклинание'
-}
-
 export const COMMANDS_LIST: IBot.ICommands = {
     [COMMAND_NAME.SPELL]: {
         command: COMMAND_NAME.SPELL,
@@ -32,12 +28,4 @@ export const COMMANDS_LIST: IBot.ICommands = {
         description: 'Помощь',
         fullDescription: `/${ COMMAND_NAME.HELP } - Описание команд.`
     },
-}
-
-export const INLINE_COMMAND_LIST: IBot.ICommands = {
-    [INLINE_COMMAND_NAME.SPELL]: {
-        command: INLINE_COMMAND_NAME.SPELL,
-        description: 'Поиск заклинаний',
-        fullDescription: `@dnd5club_bot ${ INLINE_COMMAND_NAME.SPELL } [<i>название заклинания</i>]`
-    }
 }
