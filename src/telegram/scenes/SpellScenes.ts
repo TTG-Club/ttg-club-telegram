@@ -12,6 +12,10 @@ import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
 
 enum ACTIONS {
+    ExitFromSearch = '❌ Закончить поиск',
+}
+
+enum CALLBACK_ACTIONS {
     ExitFromSearch = 'exitFromSearch',
 }
 
@@ -20,12 +24,13 @@ const http: HTTPService = new HTTPService();
 const spellsMiddleware = new SpellsMiddleware();
 
 const EXIT_BUTTON: CallbackButton[] = [
-    Markup.callbackButton('Закончить поиск заклинания', ACTIONS.ExitFromSearch)
+    Markup.callbackButton('Закончить поиск заклинания', CALLBACK_ACTIONS.ExitFromSearch)
 ];
 
 const LEAVE_MSG = 'вышел(а) из режима поиска заклинания';
 
 const getSpellListKeyboard = (spellList: NSpell.ISpell[]) => Markup.keyboard([
+    [ Markup.button(ACTIONS.ExitFromSearch) ],
     ...spellList.map(spell => [ Markup.button(`${ spell.name } [${ spell.englishName }]`) ])
 ]);
 
@@ -43,12 +48,10 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
             if (i === messages.length - 1) {
                 extra = {
                     ...extra,
-                    reply_markup: {
-                        ...Markup.inlineKeyboard([
-                            [ Markup.urlButton('Оригинал на D&D5 Club', url) ],
-                            EXIT_BUTTON
-                        ])
-                    },
+                    reply_markup: Markup.inlineKeyboard([
+                        [ Markup.urlButton('Оригинал на D&D5 Club', url) ],
+                        EXIT_BUTTON
+                    ]),
                 }
             }
 
@@ -102,6 +105,9 @@ const trySendSpellFromSession = async (ctx: IBot.TContext, name: string) => {
 scene.enter(async ctx => {
     const userName = TelegrafHelpers.getUserMentionHTMLString(ctx);
 
+    // eslint-disable-next-line no-param-reassign
+    ctx.scene.session.state.spellList = [];
+
     await ctx.replyWithHTML(`${ userName } вошел(ла) в режим поиска заклинаний.`
         + '\n\nВведи название заклинания (минимум 3 буквы)', {
         reply_to_message_id: ctx.message?.message_id,
@@ -115,7 +121,7 @@ scene.on('text', async ctx => {
         if (!ctx.message || !('text' in ctx.message)) {
             await ctx.reply('Произошла какая-то ошибка...');
 
-            await ctx.scene.reenter();
+            await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 
             return;
         }
@@ -124,7 +130,19 @@ scene.on('text', async ctx => {
             await ctx.reply('Название слишком короткое', {
                 reply_to_message_id: ctx.message.message_id,
                 disable_notification: true,
+                reply_markup: {
+                    ...Markup.keyboard([[ Markup.button(ACTIONS.ExitFromSearch) ]]),
+                    input_field_placeholder: 'Название...',
+                    resize_keyboard: true,
+                    selective: true,
+                }
             });
+
+            return;
+        }
+
+        if (ctx.message.text === ACTIONS.ExitFromSearch) {
+            await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 
             return;
         }
@@ -173,6 +191,12 @@ scene.on('text', async ctx => {
                 {
                     reply_to_message_id: ctx.message.message_id,
                     disable_notification: true,
+                    reply_markup: {
+                        ...getSpellListKeyboard(ctx.scene.session.state.spellList),
+                        input_field_placeholder: 'Название...',
+                        resize_keyboard: true,
+                        selective: true
+                    }
                 }
             );
 
@@ -205,6 +229,12 @@ scene.on('text', async ctx => {
         await ctx.reply('Я не смог найти такое заклинание... попробуй другое название', {
             reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
+            reply_markup: {
+                ...getSpellListKeyboard(ctx.scene.session.state.spellList),
+                input_field_placeholder: 'Название...',
+                resize_keyboard: true,
+                selective: true
+            },
         });
     } catch (err) {
         console.error(err);
@@ -218,7 +248,7 @@ scene.on('text', async ctx => {
     }
 });
 
-scene.action(ACTIONS.ExitFromSearch, async ctx => {
+scene.action(CALLBACK_ACTIONS.ExitFromSearch, async ctx => {
     await ctx.answerCbQuery();
 
     await BaseHandler.leaveScene(ctx, LEAVE_MSG);

@@ -48,7 +48,7 @@ scene.enter(async ctx => {
         disable_notification: true,
         reply_markup: {
             keyboard: getDiceKeyboard(),
-            input_field_placeholder: 'Напр., «2d20»...',
+            input_field_placeholder: '2d20, например...',
             resize_keyboard: true,
             selective: true,
         },
@@ -74,7 +74,7 @@ scene.on('text', async ctx => {
             disable_notification: true,
         });
 
-        await ctx.scene.reenter();
+        await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 
         return;
     }
@@ -97,22 +97,41 @@ scene.on('text', async ctx => {
                 ]),
             });
 
+            await BaseHandler.leaveScene(ctx, LEAVE_MSG);
+
             return;
         }
 
         await ctx.replyWithHTML(msg, {
             reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
+            reply_markup: {
+                keyboard: getDiceKeyboard(),
+                input_field_placeholder: '2d20, например...',
+                resize_keyboard: true,
+                selective: true,
+            },
         });
     } catch (err) {
-        await ctx.reply('В формуле броска кубиков ошибка.\n\nНе забывай про подсказку, если не получается', {
+        await ctx.reply('В формуле броска кубиков ошибка', {
+            reply_to_message_id: ctx.message.message_id,
+            disable_notification: true,
+            reply_markup: {
+                keyboard: getDiceKeyboard(),
+                input_field_placeholder: '2d20, например...',
+                resize_keyboard: true,
+                selective: true,
+            },
+        });
+
+        await ctx.reply('Не забывай про подсказку, если вдруг что-то не получается 😉', {
             reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
             reply_markup: Markup.inlineKeyboard([
                 [ Markup.urlButton('Подсказка', 'https://dnd5.club/telegram_bot') ],
                 [ Markup.callbackButton('Закончить броски', CALLBACK_ACTIONS.ExitFromRoller) ]
             ]),
-        });
+        })
     }
 });
 
