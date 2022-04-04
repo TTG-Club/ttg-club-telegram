@@ -39,8 +39,7 @@ export default class DiceRollerMiddleware {
             const result = JSON.parse(resultStr);
             const { rolls } = result.rolls[0];
 
-            return `<b>Бросок:</b> 2d20 с ${ str === 'пом' ? 'помехой' : 'преимуществом' }`
-                + `\n<b>Результат:</b> ${ String(roll.total) }`
+            return `<b>Результат:</b> ${ String(roll.total) }`
                 + `\n\n<b>Лучший результат:</b> ${
                     rolls.find((dice: any) => dice.useInTotal === (str === 'пре')).value }`
                 + `\n<b>Худший результат:</b> ${
@@ -55,9 +54,8 @@ export default class DiceRollerMiddleware {
         try {
             const roll = new DiceRoll(notation);
 
-            return `<b>Бросок:</b> ${ notation }`
-                + `\n<b>Результат:</b> ${ String(roll.total) }`
-                + `\n\n<b>Развернутый результат</b> ${ roll.output }`
+            return `<b>Результат:</b> ${ String(roll.total) }`
+                + `\n<b>Развернутый результат</b> ${ roll.output }`
         } catch (err) {
             throw new Error(err)
         }

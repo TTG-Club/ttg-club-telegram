@@ -109,11 +109,15 @@ scene.enter(async ctx => {
     ctx.scene.session.state.spellList = [];
 
     await ctx.replyWithHTML(`${ userName } вошел(ла) в режим поиска заклинаний.`
-        + '\n\nВведи название заклинания (минимум 3 буквы)', {
+        + '\nВведи название заклинания (минимум 3 буквы)', {
         reply_to_message_id: ctx.message?.message_id,
         disable_notification: true,
         reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
     });
+});
+
+scene.hears(ACTIONS.ExitFromSearch, async ctx => {
+    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 });
 
 scene.on('text', async ctx => {
@@ -137,12 +141,6 @@ scene.on('text', async ctx => {
                     selective: true,
                 }
             });
-
-            return;
-        }
-
-        if (ctx.message.text === ACTIONS.ExitFromSearch) {
-            await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 
             return;
         }
@@ -186,8 +184,7 @@ scene.on('text', async ctx => {
 
         if (spellList.length > 10) {
             await ctx.replyWithHTML(
-                `Я нашел слишком много заклинаний, где упоминается <b>«${ value }»</b>...`
-                + ' попробуй уточнить название',
+                'Я нашел слишком много заклинаний... попробуй уточнить название',
                 {
                     reply_to_message_id: ctx.message.message_id,
                     disable_notification: true,
@@ -207,7 +204,7 @@ scene.on('text', async ctx => {
             // eslint-disable-next-line no-param-reassign
             ctx.scene.session.state.spellList = spellList;
 
-            await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`, {
+            await ctx.replyWithHTML('Я нашел несколько заклинаний, выбери подходящее из этого списка', {
                 reply_to_message_id: ctx.message?.message_id,
                 disable_notification: true,
                 reply_markup: {
@@ -216,11 +213,6 @@ scene.on('text', async ctx => {
                     selective: true,
                     resize_keyboard: true
                 },
-            });
-
-            await ctx.reply('Выбери подходящее из этого списка', {
-                reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
-                disable_notification: true
             });
 
             return;
