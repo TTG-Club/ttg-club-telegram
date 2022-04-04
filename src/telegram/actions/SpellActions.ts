@@ -93,6 +93,6 @@ bot.inlineQuery(/.*/, async ctx => {
         switch_pm_text: 'Перейти в бота',
         switch_pm_parameter: COMMAND_NAME.SPELL
     });
-})
+});
 
 export default bot;

@@ -4,6 +4,7 @@ import IBot from '../../../typings/TelegramBot';
 import DiceRollerMiddleware from '../../middlewares/DiceRollerMiddleware';
 import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
+import { COMMAND_NAME } from '../constants/Commands';
 
 enum ACTIONS {
     ExitFromRoller = '❌ Закончить броски',
@@ -43,7 +44,7 @@ scene.enter(async ctx => {
     const userName = TelegrafHelpers.getUserMentionHTMLString(ctx);
 
     await ctx.replyWithHTML(`${ userName } вошел(ла) в режим броска кубиков.`
-        + '\n\nВыбирай кубик на клавиатуре или отправь мне формулу', {
+        + '\nВыбирай кубик на клавиатуре или отправь мне формулу', {
         reply_to_message_id: ctx.message?.message_id,
         disable_notification: true,
         reply_markup: {
@@ -53,19 +54,25 @@ scene.enter(async ctx => {
             selective: true,
         },
     });
+});
 
-    await ctx.reply('Держи ссылку на подсказку, чтобы знать как пишутся формулы ☺️', {
+scene.command(COMMAND_NAME.HELP, async ctx => {
+    const msg = 'https://dnd5.club/telegram_bot';
+
+    await ctx.replyWithHTML(msg, {
         reply_to_message_id: ctx.message?.message_id,
         disable_notification: true,
         reply_markup: {
-            ...Markup.inlineKeyboard([[
-                Markup.urlButton(
-                    'Подсказка',
-                    'https://dnd5.club/telegram_bot'
-                )
-            ]])
+            keyboard: getDiceKeyboard(),
+            input_field_placeholder: '2d20, например...',
+            resize_keyboard: true,
+            selective: true,
         },
     })
+});
+
+scene.hears(ACTIONS.ExitFromRoller, async ctx => {
+    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 });
 
 scene.on('text', async ctx => {
@@ -74,12 +81,6 @@ scene.on('text', async ctx => {
             disable_notification: true,
         });
 
-        await BaseHandler.leaveScene(ctx, LEAVE_MSG);
-
-        return;
-    }
-
-    if (ctx.message.text === ACTIONS.ExitFromRoller) {
         await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 
         return;
@@ -113,7 +114,8 @@ scene.on('text', async ctx => {
             },
         });
     } catch (err) {
-        await ctx.reply('В формуле броска кубиков ошибка', {
+        await ctx.reply('В формуле броска кубиков ошибка, '
+            + `отправь команду /${ COMMAND_NAME.HELP }, если не получается 😉`, {
             reply_to_message_id: ctx.message.message_id,
             disable_notification: true,
             reply_markup: {
@@ -123,15 +125,6 @@ scene.on('text', async ctx => {
                 selective: true,
             },
         });
-
-        await ctx.reply('Не забывай про подсказку, если вдруг что-то не получается 😉', {
-            reply_to_message_id: ctx.message.message_id,
-            disable_notification: true,
-            reply_markup: Markup.inlineKeyboard([
-                [ Markup.urlButton('Подсказка', 'https://dnd5.club/telegram_bot') ],
-                [ Markup.callbackButton('Закончить броски', CALLBACK_ACTIONS.ExitFromRoller) ]
-            ]),
-        })
     }
 });
 
