@@ -9,7 +9,7 @@ export const SOCIAL_LINKS = {
     },
     discord: {
         label: 'Discord-канал',
-        url: 'https://discord.gg/zqBnMJVf3z'
+        url: 'https://discord.gg/6yqaM7hcyZ'
     },
     vk: {
         label: 'Сообщество VK',
