@@ -1,6 +1,8 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller';
 
 export default class DiceRollerMiddleware {
+    public getHelpMsg = (): string => ''
+
     public getDiceMsg = async (str: string) => {
         try {
             let msg: string | undefined;
@@ -40,11 +42,11 @@ export default class DiceRollerMiddleware {
             const { rolls } = result.rolls[0];
 
             return `<b>Результат:</b> ${ String(roll.total) }`
-                + `\n\n<b>Лучший результат:</b> ${
+                + `\n<b>Лучший результат:</b> ${
                     rolls.find((dice: any) => dice.useInTotal === (str === 'пре')).value }`
                 + `\n<b>Худший результат:</b> ${
                     rolls.find((dice: any) => dice.useInTotal === (str !== 'пре')).value }`
-                + `\n\n<b>Развернутый результат</b> ${ roll.output }`
+                + `\n<b>Развернутый результат</b> ${ roll.output }`
         } catch (err) {
             throw new Error(err)
         }

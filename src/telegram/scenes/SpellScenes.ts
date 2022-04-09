@@ -10,6 +10,7 @@ import HTTPService from '../../utils/HTTPService';
 import SpellsMiddleware from '../../middlewares/SpellsMiddleware';
 import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
+import { SOCIAL_LINKS } from '../../locales/about';
 
 enum ACTIONS {
     ExitFromSearch = '❌ Закончить поиск',
@@ -73,7 +74,7 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
         await ctx.reply('Произошла ошибка, поэтому я выслал тебе сырую версию сообщения заклинания... '
             + 'пожалуйста, сообщи нам об этом в Discord', {
             reply_markup: Markup.inlineKeyboard([[
-                Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
+                Markup.urlButton(SOCIAL_LINKS.discord.label, SOCIAL_LINKS.discord.url)
             ]]),
             disable_notification: true,
         });

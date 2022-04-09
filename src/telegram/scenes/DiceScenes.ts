@@ -5,6 +5,7 @@ import DiceRollerMiddleware from '../../middlewares/DiceRollerMiddleware';
 import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
 import { COMMAND_NAME } from '../constants/Commands';
+import { SOCIAL_LINKS } from '../../locales/about';
 
 enum ACTIONS {
     ExitFromRoller = '❌ Закончить броски',
@@ -56,8 +57,11 @@ scene.enter(async ctx => {
     });
 });
 
-scene.command(COMMAND_NAME.HELP, async ctx => {
-    const msg = 'https://dnd5.club/telegram_bot';
+scene.help(async ctx => {
+    const msg = 'В нашей <a href="https://dnd5.club/telegram_bot">статье</a> подробно описаны все модификаторы '
+        + 'для формул бросков, а еще показаны примеры, как можно использовать каждый из них. '
+        + '\nСохрани себе ссылку, чтобы не забыть и не потерять, как ими пользоваться 😉'
+        + '\n\n<a href="https://dnd5.club/telegram_bot">https://dnd5.club/telegram_bot</a>';
 
     await ctx.replyWithHTML(msg, {
         reply_to_message_id: ctx.message?.message_id,
@@ -94,7 +98,7 @@ scene.on('text', async ctx => {
                 reply_to_message_id: ctx.message.message_id,
                 disable_notification: true,
                 reply_markup: Markup.inlineKeyboard([
-                    [ Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z') ]
+                    [ Markup.urlButton(SOCIAL_LINKS.discord.label, SOCIAL_LINKS.discord.url) ]
                 ]),
             });
 
