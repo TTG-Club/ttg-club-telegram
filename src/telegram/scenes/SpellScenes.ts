@@ -159,19 +159,15 @@ scene.on('text', async ctx => {
 
         const value: string = matchedName || input;
         const apiOptions: NSpell.IRequest = {
-            search: {
-                exact: !!matchedName,
-                value
-            },
-            order: [{
-                field: 'level',
-                direction: 'asc'
-            }, {
-                field: 'name',
-                direction: 'asc'
-            }]
+            search: value
         };
-        const spellList: NSpell.ISpell[] = await http.post('/spells', apiOptions);
+
+        if (matchedName) {
+            apiOptions.exact = !!matchedName
+        }
+
+        const resp = await http.get('/spells', apiOptions);
+        const spellList: NSpell.ISpell[] = resp.spell;
 
         let spell: NSpell.ISpell | undefined;
 
