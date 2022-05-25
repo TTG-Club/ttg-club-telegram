@@ -1,8 +1,8 @@
 {
     "name": "tg-bot-server",
     "description": "The server for telegram bot",
-    "version": "0.3.0",
-    "author": "Nikita Charushin <svifty7@gmail.com>",
+    "version": "0.4.0",
+    "author": "svifty7 <svifty7@gmail.com>",
     "license": "MIT",
     "private": true,
     "scripts": {
