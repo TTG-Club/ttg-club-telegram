@@ -32,19 +32,10 @@ bot.inlineQuery(/.*/, async ctx => {
     }
 
     const apiOptions: NSpell.IRequest = {
-        search: {
-            exact: false,
-            value
-        },
-        order: [{
-            field: 'level',
-            direction: 'asc'
-        }, {
-            field: 'name',
-            direction: 'asc'
-        }]
+        search: value
     };
-    const result: NSpell.ISpell[] = await http.post('/spells', apiOptions);
+    const resp = await http.get('/spells', apiOptions);
+    const result: NSpell.ISpell[] = resp.spell;
     const spells: InlineQueryResult[] = result
         .map((spell, index) => {
             const level = spellsMiddleware.getLevel(spell.level);
@@ -93,6 +84,6 @@ bot.inlineQuery(/.*/, async ctx => {
         switch_pm_text: 'Перейти в бота',
         switch_pm_parameter: COMMAND_NAME.SPELL
     });
-})
+});
 
 export default bot;

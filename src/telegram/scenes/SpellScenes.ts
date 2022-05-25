@@ -10,6 +10,7 @@ import HTTPService from '../../utils/HTTPService';
 import SpellsMiddleware from '../../middlewares/SpellsMiddleware';
 import BaseHandler from '../utils/BaseHandler';
 import TelegrafHelpers from '../utils/TelegrafHelpers';
+import { SOCIAL_LINKS } from '../../locales/about';
 
 enum ACTIONS {
     ExitFromSearch = '❌ Закончить поиск',
@@ -73,7 +74,7 @@ const sendSpellMessage = async (ctx: IBot.TContext, spell: NSpell.ISpell) => {
         await ctx.reply('Произошла ошибка, поэтому я выслал тебе сырую версию сообщения заклинания... '
             + 'пожалуйста, сообщи нам об этом в Discord', {
             reply_markup: Markup.inlineKeyboard([[
-                Markup.urlButton('Discord-канал', 'https://discord.gg/zqBnMJVf3z')
+                Markup.urlButton(SOCIAL_LINKS.discord.label, SOCIAL_LINKS.discord.url)
             ]]),
             disable_notification: true,
         });
@@ -109,11 +110,15 @@ scene.enter(async ctx => {
     ctx.scene.session.state.spellList = [];
 
     await ctx.replyWithHTML(`${ userName } вошел(ла) в режим поиска заклинаний.`
-        + '\n\nВведи название заклинания (минимум 3 буквы)', {
+        + '\nВведи название заклинания (минимум 3 буквы)', {
         reply_to_message_id: ctx.message?.message_id,
         disable_notification: true,
         reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
     });
+});
+
+scene.hears(ACTIONS.ExitFromSearch, async ctx => {
+    await BaseHandler.leaveScene(ctx, LEAVE_MSG);
 });
 
 scene.on('text', async ctx => {
@@ -141,12 +146,6 @@ scene.on('text', async ctx => {
             return;
         }
 
-        if (ctx.message.text === ACTIONS.ExitFromSearch) {
-            await BaseHandler.leaveScene(ctx, LEAVE_MSG);
-
-            return;
-        }
-
         const input: string = ctx.message.text.trim();
         const match = input.match(/^(?<spellName>.+?)(\[.+?])$/i);
         const matchedName = match?.groups?.spellName?.trim();
@@ -160,19 +159,15 @@ scene.on('text', async ctx => {
 
         const value: string = matchedName || input;
         const apiOptions: NSpell.IRequest = {
-            search: {
-                exact: !!matchedName,
-                value
-            },
-            order: [{
-                field: 'level',
-                direction: 'asc'
-            }, {
-                field: 'name',
-                direction: 'asc'
-            }]
+            search: value
         };
-        const spellList: NSpell.ISpell[] = await http.post('/spells', apiOptions);
+
+        if (matchedName) {
+            apiOptions.exact = !!matchedName
+        }
+
+        const resp = await http.get('/spells', apiOptions);
+        const spellList: NSpell.ISpell[] = resp.spell;
 
         let spell: NSpell.ISpell | undefined;
 
@@ -186,8 +181,7 @@ scene.on('text', async ctx => {
 
         if (spellList.length > 10) {
             await ctx.replyWithHTML(
-                `Я нашел слишком много заклинаний, где упоминается <b>«${ value }»</b>...`
-                + ' попробуй уточнить название',
+                'Я нашел слишком много заклинаний... попробуй уточнить название',
                 {
                     reply_to_message_id: ctx.message.message_id,
                     disable_notification: true,
@@ -207,7 +201,7 @@ scene.on('text', async ctx => {
             // eslint-disable-next-line no-param-reassign
             ctx.scene.session.state.spellList = spellList;
 
-            await ctx.replyWithHTML(`Я нашел несколько заклинаний, где упоминается <b>«${ value }»</b>`, {
+            await ctx.replyWithHTML('Я нашел несколько заклинаний, выбери подходящее из этого списка', {
                 reply_to_message_id: ctx.message?.message_id,
                 disable_notification: true,
                 reply_markup: {
@@ -216,11 +210,6 @@ scene.on('text', async ctx => {
                     selective: true,
                     resize_keyboard: true
                 },
-            });
-
-            await ctx.reply('Выбери подходящее из этого списка', {
-                reply_markup: Markup.inlineKeyboard([ EXIT_BUTTON ]),
-                disable_notification: true
             });
 
             return;

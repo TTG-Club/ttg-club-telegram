@@ -227,23 +227,8 @@ declare namespace NSpell {
     }
 
     interface IRequest {
-        page?: number
-        limit?: number
-        search: ISearch
-        order?: {
-            field: string
-            direction: 'asc' | 'desc'
-        }[]
-        filter?: {
-            book?: string[]
-            level?: number[]
-            class?: string[]
-            school?: string[]
-            component?: string[]
-            damage?: string[]
-            ritual?: boolean
-            concentration?: boolean
-        }
+        search: string,
+        exact?: boolean
     }
 }
 

@@ -69,7 +69,7 @@ bot.start(async ctx => {
 
 bot.command(COMMAND_NAME.ABOUT, async ctx => {
     const getLinksKeyboard = () => Markup.inlineKeyboard(
-        SOCIAL_LINKS.map(link => ([
+        Object.values(SOCIAL_LINKS).map(link => ([
             Markup.urlButton(link.label, link.url)
         ]))
     )
