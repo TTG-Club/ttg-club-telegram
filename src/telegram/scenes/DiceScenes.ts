@@ -58,10 +58,10 @@ scene.enter(async ctx => {
 });
 
 scene.help(async ctx => {
-    const msg = 'Посмотри нашу <a href="https://dnd5.club/telegram_bot">статью</a>. '
+    const msg = 'Посмотри нашу <a href="https://ttg.club/telegram_bot">статью</a>. '
         + 'Там ты сможешь найти подсказку, как пользоваться кубами. '
         + '\nСохрани себе ссылку, чтобы не потерять 😉'
-        + '\n\n<a href="https://dnd5.club/telegram_bot">https://dnd5.club/telegram_bot</a>';
+        + '\n\n<a href="https://ttg.club/telegram_bot">https://ttg.club/telegram_bot</a>';
 
     await ctx.replyWithHTML(msg, {
         reply_to_message_id: ctx.message?.message_id,
