@@ -1,65 +1,63 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller';
 
 export default class DiceRollerMiddleware {
-    public getHelpMsg = (): string => ''
+  public getDiceMsg = (str: string) => {
+    try {
+      let msg: string | undefined;
 
-    public getDiceMsg = async (str: string) => {
-        try {
-            let msg: string | undefined;
+      switch (str) {
+        case 'пом':
+        case 'пре':
+          msg = this.getDropOrKeepMsg(str);
 
-            switch (str) {
-                case 'пом':
-                case 'пре':
-                    msg = await this.getDropOrKeepMsg(str);
+          break;
+        default:
+          msg = this.getDefaultDiceMsg(str);
 
-                    break;
-                default:
-                    msg = await this.getDefaultDiceMsg(str);
+          break;
+      }
 
-                    break;
-            }
+      if (!msg) {
+        return '';
+      }
 
-            if (!msg) {
-                return;
-            }
-
-            return msg;
-        } catch (err) {
-            throw new Error(err)
-        }
+      return msg;
+    } catch (err) {
+      throw new Error(err as string | undefined);
     }
+  };
 
-    private getDropOrKeepMsg = async (str: string) => {
-        try {
-            const roll = new DiceRoll(str === 'пре' ? '2d20kh1' : '2d20kl1');
-            const resultStr = roll.export();
+  private getDropOrKeepMsg = (str: string) => {
+    try {
+      const roll = new DiceRoll(str === 'пре' ? '2d20kh1' : '2d20kl1');
+      const resultStr = roll.export();
 
-            if (!resultStr) {
-                return;
-            }
+      if (!resultStr) {
+        return '';
+      }
 
-            const result = JSON.parse(resultStr);
-            const { rolls } = result.rolls[0];
+      const result = JSON.parse(resultStr);
+      const { rolls } = result.rolls[0];
 
-            return `<b>Результат:</b> ${ String(roll.total) }`
-                + `\n<b>Лучший результат:</b> ${
-                    rolls.find((dice: any) => dice.useInTotal === (str === 'пре')).value }`
-                + `\n<b>Худший результат:</b> ${
-                    rolls.find((dice: any) => dice.useInTotal === (str !== 'пре')).value }`
-                + `\n<b>Развернутый результат</b> ${ roll.output }`
-        } catch (err) {
-            throw new Error(err)
-        }
+      return `<b>Результат:</b> ${ String(roll.total) }`
+        + `\n<b>Лучший результат:</b> ${
+          rolls.find((dice: any) => dice.useInTotal === (str === 'пре')).value }`
+        + `\n<b>Худший результат:</b> ${
+          rolls.find((dice: any) => dice.useInTotal === (str !== 'пре')).value }`
+        + `\n<b>Развернутый результат</b> ${ roll.output }`;
+    } catch (err) {
+      throw new Error(err as string | undefined);
     }
+  };
 
-    private getDefaultDiceMsg = async (notation: string) => {
-        try {
-            const roll = new DiceRoll(notation);
+  private getDefaultDiceMsg = (notation: string) => {
+    try {
+      const roll = new DiceRoll(notation);
 
-            return `<b>Результат:</b> ${ String(roll.total) }`
-                + `\n<b>Развернутый результат</b> ${ roll.output }`
-        } catch (err) {
-            throw new Error(err)
-        }
+      return `<b>Результат:</b> ${ String(roll.total) }`
+        + `\n<b>Развернутый результат</b> ${ roll.output }`;
+    } catch (err) {
+      throw new Error(err as string | undefined);
     }
+  };
 }
