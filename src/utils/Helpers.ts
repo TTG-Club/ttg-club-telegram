@@ -1,20 +1,24 @@
 export default class Helpers {
-    static pluralize(number: number, strings: string[]) {
-        const num = Math.abs(number);
+  static pluralize(number: number, strings: string[]) {
+    const num = Math.abs(number);
 
-        if (Number.isInteger(num)) {
-            const cases = [ 2, 0, 1, 1, 1, 2 ];
-            return strings[(number % 100 > 4 && number % 100 < 20)
-                ? 2
-                : cases[(number % 10 < 5)
-                    ? number % 10
-                    : 5]];
-        }
+    if (Number.isInteger(num)) {
+      const cases = [
+        2,
+        0,
+        1,
+        1,
+        1,
+        2
+      ];
 
-        return strings[1];
+      return strings[(number % 100 > 4 && number % 100 < 20)
+        ? 2
+        : cases[(number % 10 < 5)
+          ? number % 10
+          : 5]];
     }
 
-    // static sendErrorToDiscord(err: any) {
-    //    // TODO: Сделать отправку ошибок бота в дискорд, для более простого отслеживания
-    // }
+    return strings[1];
+  }
 }

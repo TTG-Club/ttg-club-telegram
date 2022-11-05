@@ -1,0 +1,53 @@
+name: Deploy TG Bot
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint project
+        run: npm run lint:fix
+
+      - name: Create Develop .env
+        if: ${{ github.ref_name == 'dev' }}
+        run: |
+          touch .env
+          echo "BASE_URL=https://dev.ttg.club" > .env
+          echo "TG_TOKEN=${{ secrets.TG_DEV_TOKEN }}" > .env
+
+      - name: Create Production .env
+        if: ${{ github.ref_name == 'main' }}
+        run: |
+          touch .env
+          echo "BASE_URL=https://dev.ttg.club" > .env
+          echo "TG_TOKEN=${{ secrets.TG_TOKEN }}" > .env
+
+      - name: Build Develop
+        run: npm run build
+
+      - name: Copy bot
+        uses: appleboy/scp-action@v0.1.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          overwrite: true
+          strip_components: 2
+          source: ./dist/tg.js
+          target: ${{ secrets.PROJECT_PATH }}/${{ github.ref_name == 'dev' && 'tg-bot-dev' || 'tg-bot' }}
