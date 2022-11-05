@@ -1,6 +1,6 @@
 {
-  "name": "my-webpack-project",
-  "description": "My webpack project",
+  "name": "ttg-club-tg-bot",
+  "description": "TTG Club Telegram bot",
   "version": "1.0.0",
   "author": "svifty7 <svifty7@gmail.com>",
   "license": "MIT",
