@@ -1,29 +1,29 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller';
 
 export default class DiceRollerMiddleware {
-  public getDiceMsg = (str: string) => {
+  public getDiceMsg = async (str: string) => {
     try {
-      let msg: string | undefined;
+      let msg: string | null;
 
       switch (str) {
         case 'пом':
         case 'пре':
-          msg = this.getDropOrKeepMsg(str);
+          msg = await this.getDropOrKeepMsg(str);
 
           break;
         default:
-          msg = this.getDefaultDiceMsg(str);
+          msg = await this.getDefaultDiceMsg(str);
 
           break;
       }
 
       if (!msg) {
-        return '';
+        return Promise.resolve(null);
       }
 
-      return msg;
+      return Promise.resolve(msg);
     } catch (err) {
-      throw new Error(err as string | undefined);
+      return Promise.reject(err);
     }
   };
 
@@ -33,20 +33,20 @@ export default class DiceRollerMiddleware {
       const resultStr = roll.export();
 
       if (!resultStr) {
-        return '';
+        return Promise.resolve(null);
       }
 
       const result = JSON.parse(resultStr);
       const { rolls } = result.rolls[0];
 
-      return `<b>Результат:</b> ${ String(roll.total) }`
+      return Promise.resolve(`<b>Результат:</b> ${ String(roll.total) }`
         + `\n<b>Лучший результат:</b> ${
           rolls.find((dice: any) => dice.useInTotal === (str === 'пре')).value }`
         + `\n<b>Худший результат:</b> ${
           rolls.find((dice: any) => dice.useInTotal === (str !== 'пре')).value }`
-        + `\n<b>Развернутый результат</b> ${ roll.output }`;
+        + `\n<b>Развернутый результат</b> ${ roll.output }`);
     } catch (err) {
-      throw new Error(err as string | undefined);
+      return Promise.reject(err);
     }
   };
 
@@ -54,10 +54,10 @@ export default class DiceRollerMiddleware {
     try {
       const roll = new DiceRoll(notation);
 
-      return `<b>Результат:</b> ${ String(roll.total) }`
-        + `\n<b>Развернутый результат</b> ${ roll.output }`;
+      return Promise.resolve(`<b>Результат:</b> ${ String(roll.total) }`
+        + `\n<b>Развернутый результат</b> ${ roll.output }`);
     } catch (err) {
-      throw new Error(err as string | undefined);
+      return Promise.reject(err);
     }
   };
 }
