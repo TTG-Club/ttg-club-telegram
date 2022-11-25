@@ -88,7 +88,7 @@ scene.on('text', async ctx => {
   }
 
   try {
-    const msg = diceRoll.getDiceMsg(ctx.message.text);
+    const msg = await diceRoll.getDiceMsg(ctx.message.text);
 
     if (!msg) {
       await ctx.reply('Произошла ошибка... попробуй еще раз или напиши нам в Discord-канал', {

@@ -28,14 +28,14 @@ jobs:
         if: ${{ github.ref_name == 'dev' }}
         run: |
           touch .env
-          echo "BASE_URL=https://dev.ttg.club" > .env
+          echo "BASE_URL=https://ttg.club" > .env
           echo "TG_TOKEN=${{ secrets.TG_DEV_TOKEN }}" > .env
 
       - name: Create Production .env
         if: ${{ github.ref_name == 'main' }}
         run: |
           touch .env
-          echo "BASE_URL=https://dev.ttg.club" > .env
+          echo "BASE_URL=https://ttg.club" > .env
           echo "TG_TOKEN=${{ secrets.TG_TOKEN }}" > .env
 
       - name: Build Develop
