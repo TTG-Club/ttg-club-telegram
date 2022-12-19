@@ -41,6 +41,9 @@ jobs:
       - name: Build Develop
         run: npm run build
 
+      - name: Copy .env
+        run: cp .env ./dist/.env
+
       - name: Copy bot
         uses: appleboy/scp-action@v0.1.3
         with:
@@ -49,5 +52,5 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           overwrite: true
           strip_components: 2
-          source: ./dist/tg.js,.env
+          source: ./dist/*
           target: ${{ secrets.PROJECT_PATH }}/${{ github.ref_name == 'dev' && 'tg-bot-dev' || 'tg-bot' }}
