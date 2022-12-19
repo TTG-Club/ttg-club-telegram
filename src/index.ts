@@ -6,7 +6,6 @@ import scenes from '@/scenes';
 import { COMMANDS_LIST } from '@/constants/Commands';
 import actions from '@/actions/index';
 import type IBot from '@/typings/TelegramBot';
-import * as process from "process";
 
 if (!process.env.TG_TOKEN || !process.env.TG_TOKEN.length) {
   throw new Error('В .env не указана переменная TG_TOKEN');

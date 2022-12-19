@@ -1,5 +1,5 @@
 const path = require("path");
-const DotEnv = require('dotenv-webpack');
+const Dotenv = require('dotenv-webpack')
 
 module.exports = {
   target: 'node',
@@ -14,14 +14,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist')
   },
   plugins: [
-    new DotEnv({
-      path: path.resolve(__dirname, '.env'),
-      allowEmptyValues: true,
-      systemvars: false,
-      silent: true,
-      defaults: false,
-      prefix: 'process.env.'
-    })
+    new Dotenv(),
   ],
   module: {
     rules: [
