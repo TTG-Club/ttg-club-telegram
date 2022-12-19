@@ -11,6 +11,10 @@ if (!process.env.TG_TOKEN || !process.env.TG_TOKEN.length) {
   throw new Error('В .env не указана переменная TG_TOKEN');
 }
 
+if (!process.env.BASE_URL || !process.env.BASE_URL.length) {
+  throw new Error('В .env не указана переменная BASE_URL');
+}
+
 const bot = new Telegraf<IBot.TContext>(process.env.TG_TOKEN);
 const stage = new Stage(scenes);
 
