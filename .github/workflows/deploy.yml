@@ -27,8 +27,8 @@ jobs:
       - name: Create .env
         run: |
           touch .env
-          echo "BASE_URL=https://ttg.club" > .env
-          echo "TG_TOKEN=${{ github.ref_name == 'dev' && secrets.TG_DEV_TOKEN || secrets.TG_TOKEN }}" > .env
+          echo "BASE_URL=https://ttg.club" >> .env
+          echo "TG_TOKEN=${{ github.ref_name == 'dev' && secrets.TG_DEV_TOKEN || secrets.TG_TOKEN }}" >> .env
 
       - name: Build Develop
         run: npm run build
