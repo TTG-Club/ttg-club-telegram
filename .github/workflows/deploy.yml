@@ -25,7 +25,6 @@ jobs:
         run: npm run lint:fix
 
       - name: Create .env
-        if: ${{ github.ref_name == 'main' }}
         run: |
           touch .env
           echo "BASE_URL=https://ttg.club" > .env
