@@ -49,5 +49,5 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           overwrite: true
           strip_components: 2
-          source: ./dist/tg.js
+          source: ./dist/tg.js,.env
           target: ${{ secrets.PROJECT_PATH }}/${{ github.ref_name == 'dev' && 'tg-bot-dev' || 'tg-bot' }}
