@@ -43,4 +43,4 @@ jobs:
           overwrite: true
           strip_components: 2
           source: ./dist/tg.js
-          target: ${{ secrets.PROJECT_PATH }}/${{ github.ref_name == 'dev' && 'tg-bot-dev' || 'tg-bot' }}
+          target: ${{ secrets.PROJECT_PATH }}/${{ github.ref_name == 'dev' && 'dev' || 'prod' }}
