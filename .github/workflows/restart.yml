@@ -25,4 +25,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script: pm2 restart ${{ github.ref_name == 'dev' && 'ttg-club-telegram-dev' || 'ttg-club-telegram' }}
+          script:
+            pm2 restart ${{ github.ref_name == 'dev' && 'ttg-club-telegram-dev'
+            || 'ttg-club-telegram' }}

@@ -23,7 +23,7 @@ module.exports = {
       node: {
         paths: 'src'
       }
-    },
+    }
   },
   rules: {
     'prettier/prettier': ['error'],
@@ -165,5 +165,5 @@ module.exports = {
       'error',
       { typedefs: false, enums: false }
     ]
-  },
+  }
 };

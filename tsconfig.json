@@ -44,25 +44,12 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "target": "ES2021",
-    "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules",
-      "./src/types"
-    ],
-    "types": [
-      "node"
-    ],
+    "typeRoots": ["./node_modules/@types", "./node_modules", "./src/types"],
+    "types": ["node"],
     "useDefineForClassFields": true,
     "useUnknownInCatchVariables": true,
     "verbatimModuleSyntax": true
   },
-  "exclude": [
-    "node_modules",
-    "dist"
-  ],
-  "include": [
-    "src/**/*",
-    "src/**/*.ts",
-    "src/**/*.d.ts"
-  ]
+  "exclude": ["node_modules", "dist"],
+  "include": ["src/**/*", "src/**/*.ts", "src/**/*.d.ts"]
 }
