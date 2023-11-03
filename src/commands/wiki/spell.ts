@@ -1,4 +1,5 @@
-import { InlineKeyboard } from 'grammy';
+import { InlineKeyboard, Keyboard } from 'grammy';
+import { isNumber, toNumber } from 'lodash-es';
 
 import cancelCallback from '../../callbacks/cancel.js';
 import { useAxios } from '../../utils/useAxios.js';
@@ -12,103 +13,147 @@ import type { Conversation } from '@grammyjs/conversations';
 const COMMAND_NAME = 'spell';
 
 const { getUserMentionHtmlString, leaveScene } = useHelpers();
-const http = useAxios();
 
-const getSpells = async (search: string): Promise<Array<TSpellLink>> => {
-  try {
-    const { data: spells } = await http.post<Array<TSpellLink>>({
-      url: '/spells',
-      payload: {
-        page: 0,
-        limit: 10,
-        search: {
-          value: search,
-          exact: false
-        },
-        order: [
-          {
-            field: 'level',
-            direction: 'asc'
-          },
-          {
-            field: 'name',
-            direction: 'asc'
-          }
-        ]
-      }
-    });
+class SpellConversation {
+  private readonly http = useAxios();
 
-    return spells;
-  } catch (err) {
-    return Promise.reject();
-  }
-};
+  private spells: Array<TSpellLink> = [];
 
-const searchHandler = async (
-  conversation: Conversation<IContext>,
-  context: IContext,
-  search: string
-) => {
-  const spells = await conversation.external(() => getSpells(search));
+  private prevSearch = '';
 
-  console.log(spells);
+  init = async (conversation: Conversation<IContext>): Promise<boolean> => {
+    const ctx = await conversation.waitFor('message:text');
 
-  const name = await conversation.form.select(
-    spells.map(item => `${item.name.rus} [${item.name.eng}]`),
-    async ctx => {
-      const newSearch = ctx.msg?.text?.trim();
+    const {
+      msg: { text }
+    } = ctx;
 
-      if (!newSearch) {
-        await ctx.reply('Необходимо выбрать из списка или другое название');
-      }
+    const search = text.trim();
 
-      await searchHandler(conversation, context, search);
+    if (!search) {
+      await ctx.reply('Введи название заклинания (минимум 3 буквы)', {
+        disable_notification: true
+      });
+
+      return this.init(conversation);
     }
-  );
 
-  const match = name.match(/^(.+?)(\[(?<engName>.+?)])$/i);
-  const matchedName = match?.groups?.engName?.trim();
+    if (this.prevSearch === search) {
+      await ctx.reply('Ты уже задал этот вопрос', {
+        disable_notification: true
+      });
 
-  if (!matchedName) {
-    await context.reply('Произошла ошибка, попробуй еще раз...');
+      return this.init(conversation);
+    }
 
-    return;
-  }
+    this.prevSearch = search;
+    this.spells = await conversation.external(() => this.loadSpells(search));
 
-  const spell = spells.find(item => item.name.eng === matchedName);
+    if (!this.spells.length) {
+      await ctx.reply('Я не смог найти такое заклинание', {
+        disable_notification: true
+      });
 
-  if (!spell) {
-    await context.reply('Произошла ошибка, попробуй еще раз...');
-  }
-};
+      return this.init(conversation);
+    }
 
-const handler = async (conversation: Conversation<IContext>, prev: string) => {
-  const ctx = await conversation.waitFor('message:text');
+    const keyboard = new Keyboard([
+      this.spells.map((_spell, index) => (index + 1).toString())
+    ]);
 
-  const {
-    msg: { text }
-  } = ctx;
+    await ctx.reply(
+      `Я нашел несколько заклинаний, выбери подходящее из этого списка:${this.spells.map(
+        (spell, index) =>
+          `${!index ? '\n' : ''}\n${index + 1}. ${spell.name.rus} [${
+            spell.name.eng
+          }]`
+      )}`,
+      {
+        disable_notification: true,
+        reply_markup: keyboard.resized().selected()
+      }
+    );
 
-  const search = text.trim();
+    return this.select(conversation);
+  };
 
-  if (!search) {
-    await ctx.reply('Введи название заклинания (минимум 3 буквы)');
+  private select = async (conversation: Conversation<IContext>) => {
+    const ctx = await conversation.waitFor('message:text');
 
-    await handler(conversation, search);
+    const {
+      msg: { text }
+    } = ctx;
 
-    return;
-  }
+    const match = text.match(/^(?<index>\d+?)\.(.+?)(\[(.+?)])$/i);
+    const index = toNumber(match?.groups?.index?.trim());
 
-  if (prev === search) {
-    await ctx.reply('Ты уже задал этот вопрос');
+    if (!isNumber(index)) {
+      await ctx.reply('Произошла ошибка, попробуй еще раз...', {
+        disable_notification: true
+      });
 
-    await handler(conversation, search);
+      return false;
+    }
 
-    return;
-  }
+    const spell = this.spells[index - 1];
 
-  await searchHandler(conversation, ctx, search);
-};
+    if (!spell) {
+      await ctx.reply('Произошла ошибка, попробуй еще раз...', {
+        disable_notification: true
+      });
+
+      return this.select(conversation);
+    }
+  };
+
+  private loadSpells = async (search: string): Promise<Array<TSpellLink>> => {
+    try {
+      const { data: spells } = await this.http.post<Array<TSpellLink>>({
+        url: '/spells',
+        payload: {
+          page: 0,
+          limit: 10,
+          search: {
+            value: search,
+            exact: false
+          },
+          order: [
+            {
+              field: 'level',
+              direction: 'asc'
+            },
+            {
+              field: 'name',
+              direction: 'asc'
+            }
+          ]
+        }
+      });
+
+      return spells;
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  };
+
+  // private loadSpell = async (url: string): Promise<TSpellItem> => {
+  //   try {
+  //     const { data: spell } = await this.http.post<TSpellItem>({
+  //       url
+  //     });
+  //
+  //     return spell;
+  //   } catch (err) {
+  //     return Promise.reject(err);
+  //   }
+  // };
+  //
+  // private getSpellResponse = (spell: TSpellItem) => {
+  //   console.log(spell);
+  //
+  //   return spell.name.rus;
+  // };
+}
 
 const spellCommand: ICommand = {
   command: COMMAND_NAME,
@@ -116,7 +161,7 @@ const spellCommand: ICommand = {
   fullDescription: `/${COMMAND_NAME} - Режим поиска заклинаний.`,
   order: 2,
   callback: ctx => ctx.conversation.enter(COMMAND_NAME),
-  conversation: async (conversation: Conversation<IContext>, ctx: IContext) => {
+  conversation: async (conversation, ctx) => {
     if (ctx.from === undefined) {
       await ctx.reply('Боги отвечают лишь тем, у кого есть душа', {
         disable_notification: true
@@ -139,7 +184,9 @@ const spellCommand: ICommand = {
       }
     );
 
-    await handler(conversation, '');
+    const scene = new SpellConversation();
+
+    await scene.init(conversation);
     await leaveScene(ctx);
   }
 };
