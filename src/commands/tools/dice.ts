@@ -10,12 +10,13 @@ import type { IContext } from '../../types/telegram.js';
 import type { Conversation } from '@grammyjs/conversations';
 
 const COMMAND_NAME = 'dice';
+const CANCEL_MSG = 'Закончить броски';
 
 const { getUserMentionHtmlString, leaveScene } = useHelpers();
 const { getRenderedMsg } = useDiceRoller();
 
 const keyboard = new Keyboard()
-  .text('Закончить броски')
+  .text(CANCEL_MSG)
   .row()
   .text('d2')
   .text('d4')
@@ -55,16 +56,15 @@ const handler = async (
 
   if (ctx.hasCommand(helpCommand.command)) {
     await helpReply(ctx);
-    await handler(conversation);
 
-    return false;
+    return handler(conversation);
   }
 
   const {
     message: { text }
   } = ctx;
 
-  if (text === 'Закончить броски') {
+  if (text === CANCEL_MSG) {
     return false;
   }
 
@@ -86,7 +86,7 @@ const handler = async (
       return false;
     }
 
-    await ctx.replyWithMarkdownV2(msg, {
+    await ctx.reply(msg, {
       disable_notification: true,
       reply_markup: {
         keyboard

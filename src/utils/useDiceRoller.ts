@@ -9,6 +9,8 @@ import DiceRollerParser, {
 } from 'dice-roller-parser';
 import { orderBy } from 'lodash-es';
 
+import { useHelpers } from './useHelpers.js';
+
 import type { DiceRollResult } from 'dice-roller-parser/dist/rollTypes.js';
 
 export interface IRollResult {
@@ -20,18 +22,16 @@ export interface IRollResult {
 }
 
 export class TelegramRollRenderer {
-  render = (roll: RollBase) => this.doRender(roll, true);
+  public render = (roll: RollBase) => this.doRender(roll, true);
 
   private doRender = (roll: RollBase, root = false) => {
     let render = '';
-    let label = '';
 
     const { type } = roll;
 
     switch (type) {
       case 'diceexpressionroll':
-        // @ts-ignore
-        render = this.renderGroupExpr(roll as DiceExpressionRoll);
+        render = this.renderGroupExpr(roll as DiceExpressionRoll)!;
 
         break;
       case 'grouproll':
@@ -55,9 +55,7 @@ export class TelegramRollRenderer {
       case 'fateroll':
         return this.renderFateRoll(roll as FateDieRoll);
       case 'number':
-        label = roll.label ? ` \\(${roll.label}\\)` : '';
-
-        return `${roll.value}${label}`;
+        return `${roll.value}${roll.label ? ` (${roll.label})` : ''}`;
       case 'fate':
         return `F`;
       default:
@@ -65,14 +63,14 @@ export class TelegramRollRenderer {
     }
 
     if (!roll.valid) {
-      render = `~${render.replace(/~/g, '')}~`;
+      render = `<s>${render.replace(/<\/?s>/g, '')}</s>`;
     }
 
     if (root) {
       return this.stripBrackets(render);
     }
 
-    return roll.label ? `\\(${roll.label}\\: ${render}\\)` : render;
+    return roll.label ? `(${roll.label}: ${render})` : render;
   };
 
   private renderGroup = (group: GroupRoll) => {
@@ -83,13 +81,12 @@ export class TelegramRollRenderer {
     }
 
     if (replies.length > 1) {
-      return `{ ${replies.join(' \\+ ')} } \\= \\${group.value}`;
+      return `{ ${replies.join(' + ')} } = ${group.value}`;
     }
 
-    // @ts-ignore
-    const reply = this.stripBrackets(replies[0]);
+    const reply = this.stripBrackets(replies[0]!);
 
-    return `\\{ ${reply} \\} \\= \\${group.value}`;
+    return `{ ${reply} } = ${group.value}`;
   };
 
   private renderGroupExpr = (group: DiceExpressionRoll) => {
@@ -100,7 +97,7 @@ export class TelegramRollRenderer {
     }
 
     return replies.length > 1
-      ? `\\(${replies.join(' \\+ ')} \\= \\${group.value}\\)`
+      ? `(${replies.join(' + ')} = ${group.value})`
       : replies[0];
   };
 
@@ -117,16 +114,16 @@ export class TelegramRollRenderer {
       !['number', 'fate'].includes(die.die.type) ||
       die.count.type !== 'number'
     ) {
-      reply += `\\[*Rolling\\: ${this.doRender(die.count)}d${this.doRender(
+      reply += `[<b>Rolling: ${this.doRender(die.count)}d${this.doRender(
         die.die
-      )}*\\]`;
+      )}</b>]`;
     }
 
     const matches = die.matched ? ` Match${die.value === 1 ? '' : 'es'}` : '';
 
-    reply += ` \\= \\${die.value}${matches}`;
+    reply += ` = ${die.value}${matches}`;
 
-    return `\\(${reply}\\)`;
+    return `(${reply})`;
   };
 
   private renderExpression = (expr: ExpressionRoll) => {
@@ -134,101 +131,96 @@ export class TelegramRollRenderer {
       const expressions: string[] = [];
 
       for (let i = 0; i < expr.dice.length - 1; i++) {
-        // @ts-ignore
-        expressions.push(this.doRender(expr.dice[i]));
-        // @ts-ignore
-        expressions.push(`\\${expr.ops[i]}`);
+        expressions.push(this.doRender(expr.dice[i]!));
+        expressions.push(expr.ops[i]!);
       }
 
-      // @ts-ignore
-      expressions.push(this.doRender(expr.dice.slice(-1)[0]));
-      expressions.push('\\=');
-      expressions.push(`\\${expr.value}`);
+      expressions.push(this.doRender(expr.dice.slice(-1)[0]!));
+      expressions.push('=');
+      expressions.push(`${expr.value}`);
 
-      return `\\(${expressions.join(' ')}\\)`;
+      return `(${expressions.join(' ')})`;
     }
 
-    // @ts-ignore
-    if (expr.dice[0].type === 'number') {
-      return `\\${expr.value}`;
+    if (expr.dice[0]!.type === 'number') {
+      return `${expr.value}`;
     }
 
-    // @ts-ignore
-    return this.doRender(expr.dice[0]);
+    return this.doRender(expr.dice[0]!);
   };
 
   private renderFunction = (roll: MathFunctionRoll) => {
     const render = this.doRender(roll.expr);
 
-    return `\\(${roll.op}${this.addBrackets(render)} \\= \\${roll.value}\\)`;
+    return `(${roll.op}${this.addBrackets(render)} = ${roll.value})`;
   };
 
   private addBrackets = (render: string) => {
-    let newRender = render;
+    let updated = render;
 
-    if (!newRender.startsWith('(')) {
-      newRender = `\\(${newRender}`;
+    if (!updated.startsWith('(')) {
+      updated = `(${updated}`;
     }
 
-    if (!newRender.endsWith(')')) {
-      newRender = `${newRender}\\)`;
+    if (!updated.endsWith(')')) {
+      updated = `${updated})`;
     }
 
-    return newRender;
+    return updated;
   };
 
   private stripBrackets = (render: string) => {
-    let newRender = render;
+    let updated = render;
 
-    if (newRender.startsWith('(')) {
-      newRender = newRender.substring(1);
+    if (updated.startsWith('(')) {
+      updated = updated.substring(1);
     }
 
-    if (newRender.endsWith(')')) {
-      newRender = render.substring(0, newRender.length - 1);
+    if (updated.endsWith(')')) {
+      updated = updated.substring(0, updated.length - 1);
     }
 
-    return newRender;
+    return updated;
   };
 
   private renderRoll = (roll: DieRoll) => {
-    let rollDisplay = `\\${roll.roll}`;
+    let rollDisplay = `${roll.roll}`;
 
     if (!roll.valid) {
-      rollDisplay = `~${roll.roll}~`;
+      rollDisplay = `<s>${roll.roll}</s>`;
     } else if (roll.success && roll.value === 1) {
-      rollDisplay = `*${roll.roll}*`;
+      rollDisplay = `<i>${roll.roll}</i>`;
     } else if (roll.success && roll.value === -1) {
-      rollDisplay = `_${roll.roll}_`;
+      rollDisplay = `<b>${roll.roll}</b>`;
     } else if (!roll.success && roll.critical === 'success') {
-      rollDisplay = `*${roll.roll}*`;
+      rollDisplay = `<i>${roll.roll}</i>`;
     } else if (!roll.success && roll.critical === 'failure') {
-      rollDisplay = `_${roll.roll}_`;
+      rollDisplay = `<b>${roll.roll}</b>`;
     }
 
     if (roll.matched) {
-      rollDisplay = `__${rollDisplay}__`;
+      rollDisplay = `<u>${rollDisplay}</u>`;
     }
 
     return rollDisplay;
   };
 
   private renderFateRoll = (roll: FateDieRoll) => {
-    const rollValue: string =
-      roll.roll === 0 ? '0' : roll.roll > 0 ? '\\+' : '\\-';
+    // eslint-disable-next-line no-nested-ternary
+    const rollValue: string = roll.roll === 0 ? '0' : roll.roll > 0 ? '+' : '-';
 
-    let rollDisplay = `\\${roll.roll}`;
+    let rollDisplay = `${roll.roll}`;
 
     if (!roll.valid) {
-      rollDisplay = `~${rollValue}~`;
+      rollDisplay = `<s>${rollValue}</s>`;
     } else if (roll.success && roll.value === 1) {
-      rollDisplay = `*${rollValue}*`;
+      rollDisplay = `<i>${rollValue}</i>`;
     } else if (roll.success && roll.value === -1) {
-      rollDisplay = `_${rollValue}_`;
+      rollDisplay = `<b></b>${rollValue}</b>`;
     }
 
     if (roll.matched) {
-      rollDisplay = `__${rollDisplay}__`;
+      rollDisplay = `<u>${rollDisplay}</u>`;
     }
 
     return rollDisplay;
@@ -240,9 +232,7 @@ export function useDiceRoller() {
 
   const roller = new DiceRoller();
   const { render } = new TelegramRollRenderer();
-
-  const getEscapedString = (str: string) =>
-    str.replace(/([_*[\]()~`>#+\-=|{},.!])/g, '\\$1');
+  const { getEscapedString } = useHelpers();
 
   const getBaseResponse = (
     rendered: string,
@@ -290,6 +280,12 @@ export function useDiceRoller() {
       case '2d20kl1':
         return getDropOrKeepMsg(formula);
 
+      case 'пом':
+        return getDropOrKeepMsg('2d20kl1');
+
+      case 'пре':
+        return getDropOrKeepMsg('2d20kh1');
+
       default:
         return getDefaultDiceMsg(formula);
     }
@@ -305,23 +301,23 @@ export function useDiceRoller() {
         );
       }
 
-      let reply = `\n\n*Развернутый результат:* ${roll.rendered}`;
-
-      if (notation !== '2d20' && notation !== '2к20') {
-        reply += `\n\n*Результат:* ${getEscapedString(roll.value.toString())}`;
-      }
+      let reply = '';
 
       if (roll.highest) {
-        reply += `\n\n*Лучший бросок:* ${getEscapedString(
+        reply += `\n<b>Лучший бросок:</b> ${getEscapedString(
           roll.highest.toString()
         )}`;
       }
 
       if (roll.lowest) {
-        reply += `\n\n*Худший бросок:* ${getEscapedString(
+        reply += `\n<b>Худший бросок:</b> ${getEscapedString(
           roll.lowest.toString()
         )}`;
       }
+
+      reply += `\n\n<b>Развернутый результат:</b> ${roll.rendered}`;
+
+      reply += `\n<b>Результат:</b> ${getEscapedString(roll.value.toString())}`;
 
       return reply;
     } catch (err) {

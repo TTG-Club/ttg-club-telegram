@@ -1,4 +1,8 @@
+import { useConfig } from './useConfig.js';
+
 import type { IContext } from '../types/telegram.js';
+
+const { API_URL } = useConfig();
 
 export const useHelpers = () => {
   const getUserMentionHtmlString = (ctx: IContext): string => {
@@ -53,9 +57,16 @@ export const useHelpers = () => {
     setTimeout(reply.delete, 1000);
   };
 
+  const getUrl = (url: string) => `${API_URL}${url}`;
+
+  const getEscapedString = (str: string) =>
+    str.replace(/([_*[\]()~`>#+\-=|{},.!])/g, '\\$1');
+
   return {
-    getUserMentionHtmlString,
+    getUrl,
+    pluralize,
     leaveScene,
-    pluralize
+    getEscapedString,
+    getUserMentionHtmlString
   };
 };

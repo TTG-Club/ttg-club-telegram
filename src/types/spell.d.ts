@@ -1,4 +1,5 @@
 import type {
+  TBackgroundBadge,
   TClassBadge,
   TName,
   TRaceBadge,
@@ -47,5 +48,6 @@ export type TSpellItem = {
   concentration?: boolean;
   ritual?: boolean;
   races?: TRaceBadge[];
+  backgrounds?: TBackgroundBadge[];
   upper?: string;
 };

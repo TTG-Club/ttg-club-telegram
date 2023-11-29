@@ -32,6 +32,11 @@ export type TRaceBadge = {
   url: string;
 };
 
+export type TBackgroundBadge = {
+  name: string;
+  url: string;
+};
+
 export type TPrice = {
   dmg: string;
   xge: string;

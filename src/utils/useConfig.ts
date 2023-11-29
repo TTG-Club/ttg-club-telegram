@@ -17,6 +17,7 @@ if (error !== undefined || parsed === undefined) {
 export const useConfig = (): {
   TOKEN: string;
   API_URL: string;
+  MAX_LENGTH: number;
 } => {
   if (!parsed.TOKEN) {
     throw new Error('TOKEN is not defined');
@@ -28,6 +29,7 @@ export const useConfig = (): {
 
   return {
     TOKEN: parsed.TOKEN,
-    API_URL: parsed.API_URL
+    API_URL: parsed.API_URL,
+    MAX_LENGTH: 4096
   };
 };
