@@ -1,71 +1,67 @@
-import {
-  session, Stage, Telegraf
-} from 'telegraf';
-import _ from 'lodash';
-import scenes from '@/scenes';
-import { COMMANDS_LIST } from '@/constants/Commands';
-import actions from '@/actions/index';
-import type IBot from '@/typings/TelegramBot';
+import { autoRetry } from '@grammyjs/auto-retry';
+import { conversations } from '@grammyjs/conversations';
+import { hydrate } from '@grammyjs/hydrate';
+import { hydrateReply, parseMode } from '@grammyjs/parse-mode';
+import { autoQuote } from '@roziscoding/grammy-autoquote';
+import { Bot, BotError, GrammyError, HttpError, session } from 'grammy';
 
-if (!process.env.TG_TOKEN || !process.env.TG_TOKEN.length) {
+import { useCallbacks } from './callbacks/index.js';
+import { useCommands } from './commands/index.js';
+
+import type { IContext } from './types/telegram.js';
+
+if (!process.env.TOKEN || !process.env.TOKEN.length) {
   throw new Error('В .env не указана переменная TG_TOKEN');
 }
 
-if (!process.env.BASE_URL || !process.env.BASE_URL.length) {
+if (!process.env.API_URL || !process.env.API_URL.length) {
   throw new Error('В .env не указана переменная BASE_URL');
 }
 
-const bot = new Telegraf<IBot.TContext>(process.env.TG_TOKEN);
-const stage = new Stage(scenes);
+const bot = new Bot<IContext>(process.env.TOKEN);
 
-const launchCallback = async () => {
+bot.use(session({ initial: () => ({}) }));
+bot.use(hydrate());
+bot.use(conversations());
+bot.use(hydrateReply);
+bot.use(autoQuote);
+
+bot.api.config.use(parseMode('HTML'));
+bot.api.config.use(autoRetry());
+
+const { commands, registerCommands } = useCommands();
+const { registerCallbacks } = useCallbacks();
+
+registerCommands(bot);
+registerCallbacks(bot);
+
+bot.catch(async (err: BotError) => {
+  const { ctx } = err;
+
   try {
-    const defaultCommands: IBot.ICommands = _.cloneDeep(COMMANDS_LIST);
+    await ctx.reply('Произошла неизвестная ошибка...');
+  } finally {
+    console.error(`Error while handling update ${ctx.update.update_id}:`);
 
-    const modifiedList = Object.values(defaultCommands)
-      .map(item => ({
-        command: item.command,
-        description: item.description
-      }));
+    const e = err.error;
 
-    await bot.telegram.setMyCommands(modifiedList);
-  } catch (err) {
-    console.error(err);
+    if (e instanceof GrammyError) {
+      console.error('Error in request:', e.description);
+    } else if (e instanceof HttpError) {
+      console.error('Could not contact Telegram:', e);
+    } else {
+      console.error('Unknown error:', e);
+    }
   }
+});
+
+process.once('SIGINT', () => bot.stop());
+
+process.once('SIGTERM', () => bot.stop());
+
+const launch = async () => {
+  await bot.start();
+  await bot.api.setMyCommands(commands);
 };
 
-bot.use(session());
-bot.use(stage.middleware());
-
-for (let i = 0; i < actions.length; i++) {
-  bot.use(actions[i]);
-}
-
-bot.catch(async (err: string | undefined) => {
-  if (!!bot?.context?.scene && 'leave' in bot.context.scene) {
-    await bot.context.scene.leave();
-  }
-
-  console.error(err);
-});
-
-bot.launch()
-  .then(async () => {
-    await launchCallback();
-  });
-
-process.once('SIGINT', async () => {
-  try {
-    await bot.stop();
-  } catch (err) {
-    console.error(err);
-  }
-});
-
-process.once('SIGTERM', async () => {
-  try {
-    await bot.stop();
-  } catch (err) {
-    console.error(err);
-  }
-});
+await launch();

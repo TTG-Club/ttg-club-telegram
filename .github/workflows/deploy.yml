@@ -1,46 +1,43 @@
-name: Deploy TG Bot
+name: Deploy
 
 on:
   push:
     branches:
-      - dev
       - main
+      - dev
+
+  workflow_dispatch:
+
+permissions:
+  deployments: write
+  contents: read
+  pages: write
+  actions: write
+  id-token: write
+
+concurrency:
+  group: build-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
+  lint:
+    name: Lint Workflow
+    uses: ./.github/workflows/lint.yml
+
   build:
+    name: Build Job
+    needs: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-node@v3
+      - uses: appleboy/ssh-action@v0.1.7
         with:
-          node-version: 16
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint project
-        run: npm run lint:fix
-
-      - name: Create .env
-        run: |
-          touch .env
-          echo "BASE_URL=https://ttg.club" >> .env
-          echo "TG_TOKEN=${{ github.ref_name == 'dev' && secrets.TG_DEV_TOKEN || secrets.TG_TOKEN }}" >> .env
-
-      - name: Build Develop
-        run: npm run build
-
-      - name: Copy bot
-        uses: appleboy/scp-action@v0.1.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }}
-          rm: true
-          overwrite: true
-          strip_components: 2
-          source: ./dist/tg.js
-          target: ${{ secrets.PROJECT_PATH }}/${{ github.ref_name == 'dev' && 'dev' || 'prod' }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.SSH_PATH }}/${{ github.ref_name == 'dev' && 'dev' || 'prod' }}
+            git pull
+            npm ci
+            npm run build
+            pm2 restart ${{ github.ref_name == 'dev' && 'ttg-club-telegram-dev' || 'ttg-club-telegram' }}
