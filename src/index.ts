@@ -29,7 +29,7 @@ bot.use(autoQuote);
 bot.api.config.use(parseMode('HTML'));
 bot.api.config.use(autoRetry());
 
-const { commands, registerCommands } = useCommands();
+const { setMyCommands, registerCommands } = useCommands();
 const { registerCallbacks } = useCallbacks();
 
 registerCommands(bot);
@@ -59,9 +59,13 @@ process.once('SIGINT', () => bot.stop());
 
 process.once('SIGTERM', () => bot.stop());
 
-const launch = async () => {
-  await bot.start();
-  await bot.api.setMyCommands(commands);
-};
+try {
+  await bot.start({
+    drop_pending_updates: true,
+    onStart: () => setMyCommands(bot)
+  });
+} catch (err) {
+  console.error(err);
 
-await launch();
+  await bot.stop();
+}

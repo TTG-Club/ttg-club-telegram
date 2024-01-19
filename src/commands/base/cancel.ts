@@ -5,7 +5,7 @@ import type { ICommand } from '../../types/commands.js';
 const { leaveScene } = useHelpers();
 
 const cancelCommand: ICommand = {
-  visible: false,
+  hidden: true,
   order: 0,
   command: 'cancel',
   description: 'Выход из режима',
