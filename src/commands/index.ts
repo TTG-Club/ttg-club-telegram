@@ -14,7 +14,25 @@ const COMMAND_LIST = orderBy(
 );
 
 export const useCommands = () => {
-  const commands = Object.values(COMMAND_LIST).filter(cmd => cmd.visible);
+  const commands = Object.values(COMMAND_LIST).filter(cmd => !cmd.hidden);
+
+  const setMyCommands = async (bot: Bot<IContext>, attempt = 0) => {
+    if (attempt >= 4) {
+      console.error(new Error('Failed to install command menu!'));
+
+      return;
+    }
+
+    try {
+      await bot.api.setMyCommands(
+        commands.map(({ command, description }) => ({ command, description }))
+      );
+    } catch (err) {
+      console.error(err);
+
+      setTimeout(() => setMyCommands(bot, attempt + 1), 10000);
+    }
+  };
 
   const registerCommands = (bot: Bot<IContext>) => {
     for (const command of COMMAND_LIST) {
@@ -34,6 +52,7 @@ export const useCommands = () => {
 
   return {
     commands,
+    setMyCommands,
     registerCommands
   };
 };

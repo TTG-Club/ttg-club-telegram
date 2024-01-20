@@ -41,6 +41,9 @@ const allowedTags = [
   'th',
   'tr',
 
+  // Superscript
+  'sup',
+
   // Dices
   'dice-roller'
 ];
@@ -55,6 +58,11 @@ export const useMarkup = () => {
   turndownService.addRule('paragraph', {
     filter: 'p',
     replacement: content => `\n\n${content}\n\n`
+  });
+
+  turndownService.addRule('superscript', {
+    filter: node => node.nodeName === 'SUP',
+    replacement: content => ` [${content}]`
   });
 
   turndownService.addRule('diceRoller', {

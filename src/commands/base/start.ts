@@ -3,7 +3,7 @@ import type { ICommand } from '../../types/commands.js';
 const startCommand: ICommand = {
   command: 'start',
   description: 'Приветствие',
-  visible: false,
+  hidden: true,
   callback: async ctx => {
     try {
       await ctx.reply(

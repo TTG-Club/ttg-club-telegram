@@ -5,7 +5,7 @@ import type { BotCommand } from 'grammy/types';
 
 export interface ICommand extends BotCommand {
   order?: number;
-  visible?: boolean;
+  hidden?: boolean;
   callback: MiddlewareFn<IContext>;
   conversation?: ConversationFn<IContext>;
   fullDescription?: string;
