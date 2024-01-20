@@ -1,17 +1,11 @@
 import { InlineKeyboard, Keyboard } from 'grammy';
 import { toNumber } from 'lodash-es';
 
-import { useAxios } from '../../utils/useAxios.js';
-import { useConfig } from '../../utils/useConfig.js';
 import { useHelpers } from '../../utils/useHelpers.js';
-import { useMarkup } from '../../utils/useMarkup.js';
+import { useSpells } from '../../utils/useSpells.js';
 
 import type { ICommand } from '../../types/commands.js';
-import type {
-  TSpellItem,
-  TSpellItemComponents,
-  TSpellLink
-} from '../../types/spell.js';
+import type { TSpellLink } from '../../types/spell.js';
 import type { IContext } from '../../types/telegram.js';
 import type { Conversation } from '@grammyjs/conversations';
 import type { Other } from '@grammyjs/hydrate';
@@ -20,9 +14,8 @@ const COMMAND_NAME = 'spell';
 const CANCEL_MSG = 'Закончить поиск';
 const CANCEL_CB = 'cancel';
 
-const { MAX_LENGTH } = useConfig();
+const { getSpellResponse, loadSpells, loadSpell } = useSpells();
 const { getUserMentionHtmlString, leaveScene, getUrl } = useHelpers();
-const { getDescriptionEmbeds } = useMarkup();
 
 const getInlineKeyboard = (url?: string) =>
   url
@@ -33,8 +26,6 @@ const getInlineKeyboard = (url?: string) =>
     : new InlineKeyboard().text(CANCEL_MSG, CANCEL_CB);
 
 class SpellConversation {
-  private readonly http = useAxios();
-
   private spells: Array<TSpellLink> = [];
 
   private prevSearch = '';
@@ -114,7 +105,7 @@ class SpellConversation {
 
       this.prevSearch = search;
 
-      const spells = await conversation.external(() => this.loadSpells(search));
+      const spells = await conversation.external(() => loadSpells(search));
 
       if (!spells.length) {
         await ctx.reply('Я не смог найти такое заклинание', {
@@ -170,7 +161,7 @@ class SpellConversation {
     index: number
   ): Promise<boolean> => {
     try {
-      const spell = await this.loadSpell(this.spells[index - 1]!);
+      const spell = await loadSpell(this.spells[index - 1]!);
 
       if (!spell) {
         await ctx.reply('Произошла ошибка, попробуй еще раз...', {
@@ -180,7 +171,7 @@ class SpellConversation {
         return this.init(conversation, ctx);
       }
 
-      const messages = await this.getSpellResponse(spell);
+      const messages = await getSpellResponse(spell);
 
       for (let i = 0; i < messages.length; i++) {
         const msg = messages[i]!;
@@ -206,159 +197,6 @@ class SpellConversation {
       return Promise.reject(err);
     }
   };
-
-  private loadSpells = async (search: string): Promise<Array<TSpellLink>> => {
-    try {
-      const { data: spells } = await this.http.post<Array<TSpellLink>>({
-        url: '/spells',
-        payload: {
-          page: 0,
-          limit: 10,
-          search: {
-            value: search,
-            exact: false
-          },
-          order: [
-            {
-              field: 'level',
-              direction: 'asc'
-            },
-            {
-              field: 'name',
-              direction: 'asc'
-            }
-          ]
-        }
-      });
-
-      return spells;
-    } catch (err) {
-      return Promise.reject(err);
-    }
-  };
-
-  private loadSpell = async (spellLink: TSpellLink): Promise<TSpellItem> => {
-    try {
-      const { data: spell } = await this.http.post<TSpellItem>({
-        url: spellLink.url
-      });
-
-      return spell;
-    } catch (err) {
-      return Promise.reject(err);
-    }
-  };
-
-  private getSpellResponse = (spell: TSpellItem): Promise<Array<string>> => {
-    try {
-      const messages: string[] = [
-        `<b>${spell.name.rus}</b> [<i>${spell.name.eng}</i>]`
-      ];
-
-      const updateMsg = (str: string) => {
-        const index = messages.length > 0 ? messages.length - 1 : 0;
-
-        if (messages[index]!.length + str.length > MAX_LENGTH) {
-          messages[index + 1] = str;
-
-          return;
-        }
-
-        messages[index] += str;
-      };
-
-      updateMsg(`\n<i>${this.getSubTitle(spell)}</i>\n`);
-
-      updateMsg(
-        `\n<b>Источник:</b> ${spell.source.name} [${spell.source.shortName}]`
-      );
-
-      updateMsg(`\n<b>Время накладывания:</b> ${spell.time}`);
-      updateMsg(`\n<b>Дистанция:</b> ${spell.range}`);
-      updateMsg(`\n<b>Длительность:</b> ${spell.duration}`);
-
-      updateMsg(
-        `\n<b>Компоненты:</b> ${this.getComponents(spell.components)}\n`
-      );
-
-      const classes = spell.classes
-        .map(
-          classItem =>
-            `<a href="${getUrl(classItem.url)}">${classItem.name}</a>`
-        )
-        .join(', ');
-
-      if (classes.length) {
-        updateMsg(`\n<b>Классы:</b> ${classes}`);
-      }
-
-      const subClasses = spell.subclasses
-        ?.map(
-          subclass =>
-            `<a href="${getUrl(subclass.url)}">${subclass.name} (${
-              subclass.class
-            })</a>`
-        )
-        .join(', ');
-
-      if (subClasses?.length) {
-        updateMsg(`\n<b>Подклассы:</b> ${subClasses}`);
-      }
-
-      const races = spell.races
-        ?.map(race => `<a href="${getUrl(race.url)}">${race.name}</a>`)
-        .join(', ');
-
-      if (races?.length) {
-        updateMsg(`\n<b>Расы и происхождения:</b> ${races}`);
-      }
-
-      const backgrounds = spell.backgrounds
-        ?.map(
-          background =>
-            `<a href="${getUrl(background.url)}">${background.name}</a>`
-        )
-        .join(', ');
-
-      if (backgrounds?.length) {
-        updateMsg(`\n<b>Предыстории:</b> ${backgrounds}`);
-      }
-
-      if (spell.description) {
-        updateMsg(`\n\n`);
-
-        for (const row of getDescriptionEmbeds(spell.description)) {
-          updateMsg(row);
-        }
-      }
-
-      if (spell.upper) {
-        updateMsg(`\n\n<b>На более высоких уровнях: </b>`);
-
-        for (const row of getDescriptionEmbeds(`<p>${spell.upper}</p>`)) {
-          updateMsg(row);
-        }
-      }
-
-      return Promise.resolve(messages);
-    } catch (err) {
-      return Promise.reject(err);
-    }
-  };
-
-  private getSubTitle = (spell: TSpellItem) =>
-    `${spell.level ? `${spell.level} уровень` : 'заговор'}, ${spell.school}${
-      spell.additionalType ? ` [${spell.additionalType}]` : ''
-    }${spell.ritual ? ' (ритуал)' : ''}`;
-
-  private getComponents = (components: TSpellItemComponents) =>
-    `${
-      components.v
-        ? `Вербальный${components.s || components.m ? ', ' : ''}`
-        : ''
-    }${components.s ? `Соматический${components.m ? ', ' : ''}` : ''}${
-      components.m ? `Материальный (${components.m})` : ''
-    }`;
 }
 
 const spellCommand: ICommand = {

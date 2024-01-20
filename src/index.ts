@@ -7,6 +7,7 @@ import { Bot, BotError, GrammyError, HttpError, session } from 'grammy';
 
 import { useCallbacks } from './callbacks/index.js';
 import { useCommands } from './commands/index.js';
+import { useInlineQueries } from './inline-query/index.js';
 
 import type { IContext } from './types/telegram.js';
 
@@ -24,9 +25,9 @@ bot.use(
   session({
     initial: () => ({}),
     getSessionKey: (ctx): string | undefined =>
-      ctx.from === undefined || ctx.chat === undefined
+      !ctx.from || (!ctx.chat && !ctx.inlineQuery)
         ? undefined
-        : `${ctx.from.id}/${ctx.chat.id}`
+        : `${ctx.from.id}/${ctx.chat?.id || ctx.inlineQuery?.from}`
   })
 );
 bot.use(hydrate());
@@ -39,9 +40,11 @@ bot.api.config.use(autoRetry());
 
 const { setMyCommands, registerCommands } = useCommands();
 const { registerCallbacks } = useCallbacks();
+const { registerInlineQueries } = useInlineQueries();
 
 registerCommands(bot);
 registerCallbacks(bot);
+registerInlineQueries(bot);
 
 bot.catch(async (err: BotError) => {
   const { ctx } = err;
