@@ -20,7 +20,15 @@ if (!process.env.API_URL || !process.env.API_URL.length) {
 
 const bot = new Bot<IContext>(process.env.TOKEN);
 
-bot.use(session({ initial: () => ({}) }));
+bot.use(
+  session({
+    initial: () => ({}),
+    getSessionKey: (ctx): string | undefined =>
+      ctx.from === undefined || ctx.chat === undefined
+        ? undefined
+        : `${ctx.from.id}/${ctx.chat.id}`
+  })
+);
 bot.use(hydrate());
 bot.use(conversations());
 bot.use(hydrateReply);

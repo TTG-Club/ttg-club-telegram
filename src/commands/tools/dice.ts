@@ -31,8 +31,7 @@ const keyboard = new Keyboard()
   .text('пре')
   .placeholder('2d20, например...')
   .selected()
-  .resized()
-  .build();
+  .resized();
 
 const helpReply = async (ctx: IContext) => {
   const msg =
@@ -43,33 +42,40 @@ const helpReply = async (ctx: IContext) => {
 
   await ctx.reply(msg, {
     disable_notification: true,
-    reply_markup: {
-      keyboard
-    }
+    reply_markup: keyboard
   });
 };
 
 const handler = async (
-  conversation: Conversation<IContext>
+  conversation: Conversation<IContext>,
+  context: IContext
 ): Promise<boolean> => {
-  const ctx = await conversation.waitFor('message:text');
+  if (!context.from) {
+    return false;
+  }
+
+  const ctx = await conversation.waitFrom(context.from);
 
   if (ctx.hasCommand(helpCommand.command)) {
     await helpReply(ctx);
 
-    return handler(conversation);
+    return handler(conversation, context);
   }
 
-  const {
-    message: { text }
-  } = ctx;
+  const { message } = ctx;
 
-  if (text === CANCEL_MSG) {
+  if (!message?.text) {
+    await conversation.skip({ drop: true });
+
+    return handler(conversation, context);
+  }
+
+  if (message.text === CANCEL_MSG) {
     return false;
   }
 
   try {
-    const msg = await getRenderedMsg(text);
+    const msg = await getRenderedMsg(message.text);
 
     if (!msg) {
       await ctx.reply(
@@ -88,12 +94,10 @@ const handler = async (
 
     await ctx.reply(msg, {
       disable_notification: true,
-      reply_markup: {
-        keyboard
-      }
+      reply_markup: keyboard
     });
 
-    return handler(conversation);
+    return handler(conversation, context);
   } catch (err) {
     console.error(err);
 
@@ -102,13 +106,11 @@ const handler = async (
         `отправь команду /${helpCommand.command}, если не получается 😉`,
       {
         disable_notification: true,
-        reply_markup: {
-          keyboard
-        }
+        reply_markup: keyboard
       }
     );
 
-    return handler(conversation);
+    return handler(conversation, context);
   }
 };
 
@@ -119,28 +121,20 @@ const diceCommand: ICommand = {
   order: 1,
   callback: ctx => ctx.conversation.enter(COMMAND_NAME),
   conversation: async (conversation, ctx) => {
-    if (ctx.from === undefined) {
-      await ctx.reply('Боги отвечают лишь тем, у кого есть душа', {
-        disable_notification: true
-      });
-
+    if (!ctx.from) {
       return;
     }
 
-    const userName = getUserMentionHtmlString(ctx);
-
     await ctx.reply(
-      `${userName} вошел(ла) в режим броска кубиков.` +
-        '\nВыбирай кубик на клавиатуре или отправь мне формулу',
+      `${getUserMentionHtmlString(ctx)} вошел(ла) в режим броска кубиков.` +
+        '\nВыбирай кубик на клавиатуре или отправь мне формулу.',
       {
         disable_notification: true,
-        reply_markup: {
-          keyboard
-        }
+        reply_markup: keyboard
       }
     );
 
-    await handler(conversation);
+    await handler(conversation, ctx);
     await leaveScene(ctx);
   }
 };

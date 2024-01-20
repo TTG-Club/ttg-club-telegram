@@ -1,7 +1,6 @@
 import { InlineKeyboard, Keyboard } from 'grammy';
 import { toNumber } from 'lodash-es';
 
-import cancelCallback from '../../callbacks/cancel.js';
 import { useAxios } from '../../utils/useAxios.js';
 import { useConfig } from '../../utils/useConfig.js';
 import { useHelpers } from '../../utils/useHelpers.js';
@@ -19,10 +18,19 @@ import type { Other } from '@grammyjs/hydrate';
 
 const COMMAND_NAME = 'spell';
 const CANCEL_MSG = 'Закончить поиск';
+const CANCEL_CB = 'cancel';
 
 const { MAX_LENGTH } = useConfig();
 const { getUserMentionHtmlString, leaveScene, getUrl } = useHelpers();
 const { getDescriptionEmbeds } = useMarkup();
+
+const getInlineKeyboard = (url?: string) =>
+  url
+    ? new InlineKeyboard()
+        .url('Оригинал на TTG Club', getUrl(url))
+        .row()
+        .text(CANCEL_MSG, CANCEL_CB)
+    : new InlineKeyboard().text(CANCEL_MSG, CANCEL_CB);
 
 class SpellConversation {
   private readonly http = useAxios();
@@ -33,23 +41,39 @@ class SpellConversation {
 
   init = async (
     conversation: Conversation<IContext>,
-    context?: IContext
+    context: IContext
   ): Promise<boolean> => {
     try {
-      context?.reply('Введи название заклинания (минимум 3 буквы)', {
-        reply_to_message_id: undefined,
-        reply_markup: { remove_keyboard: true }
-      });
+      if (!context.from) {
+        return false;
+      }
 
-      const ctx = await conversation.waitFor('message:text');
+      if (!this.spells.length) {
+        await context.reply('Введи название заклинания (минимум 3 буквы)', {
+          reply_markup: {
+            remove_keyboard: true,
+            selective: true
+          }
+        });
+      }
 
-      const {
-        msg: { text }
-      } = ctx;
+      const ctx = await conversation.waitFrom(context.from);
 
-      const msg = text.trim();
+      const { message, callbackQuery } = ctx;
 
-      if (text === CANCEL_MSG) {
+      if (callbackQuery?.data === CANCEL_CB) {
+        return false;
+      }
+
+      if (!message?.text) {
+        await conversation.skip();
+
+        return this.init(conversation, context);
+      }
+
+      const msg = message.text.trim();
+
+      if (msg === CANCEL_MSG) {
         return false;
       }
 
@@ -62,13 +86,10 @@ class SpellConversation {
       if (msg.length < 3) {
         await ctx.reply('Необходимо ввести минимум 3 буквы', {
           disable_notification: true,
-          reply_markup: new InlineKeyboard().text(
-            'Закончить поиск заклинаний',
-            cancelCallback.data
-          )
+          reply_markup: getInlineKeyboard()
         });
 
-        return this.init(conversation);
+        return this.init(conversation, context);
       }
 
       return this.search(conversation, ctx, msg);
@@ -85,14 +106,10 @@ class SpellConversation {
     try {
       if (this.prevSearch === search) {
         await ctx.reply('Ты уже задал этот вопрос', {
-          disable_notification: true,
-          reply_markup: new InlineKeyboard().text(
-            'Закончить поиск заклинаний',
-            cancelCallback.data
-          )
+          disable_notification: true
         });
 
-        return this.init(conversation);
+        return this.init(conversation, ctx);
       }
 
       this.prevSearch = search;
@@ -102,25 +119,19 @@ class SpellConversation {
       if (!spells.length) {
         await ctx.reply('Я не смог найти такое заклинание', {
           disable_notification: true,
-          reply_markup: new InlineKeyboard().text(
-            'Закончить поиск заклинаний',
-            cancelCallback.data
-          )
+          reply_markup: getInlineKeyboard()
         });
 
-        return this.init(conversation);
+        return this.init(conversation, ctx);
       }
 
       if (spells.length > 10) {
         await ctx.reply('Я нашел слишком много заклинаний', {
           disable_notification: true,
-          reply_markup: new InlineKeyboard().text(
-            'Закончить поиск заклинаний',
-            cancelCallback.data
-          )
+          reply_markup: getInlineKeyboard()
         });
 
-        return this.init(conversation);
+        return this.init(conversation, ctx);
       }
 
       this.spells = spells;
@@ -147,7 +158,7 @@ class SpellConversation {
         }
       );
 
-      return this.init(conversation);
+      return this.init(conversation, ctx);
     } catch (err) {
       return Promise.reject(err);
     }
@@ -166,7 +177,7 @@ class SpellConversation {
           disable_notification: true
         });
 
-        return this.init(conversation);
+        return this.init(conversation, ctx);
       }
 
       const messages = await this.getSpellResponse(spell);
@@ -184,16 +195,13 @@ class SpellConversation {
         }
 
         if (i + 1 === messages.length) {
-          config.reply_markup = new InlineKeyboard()
-            .url('Оригинал на TTG Club', getUrl(spell.url))
-            .row()
-            .text('Закончить поиск заклинаний', cancelCallback.data);
+          config.reply_markup = getInlineKeyboard(spell.url);
         }
 
         await ctx.reply(msg, config);
       }
 
-      return this.init(conversation);
+      return this.init(conversation, ctx);
     } catch (err) {
       return Promise.reject(err);
     }
@@ -360,23 +368,17 @@ const spellCommand: ICommand = {
   order: 2,
   callback: ctx => ctx.conversation.enter(COMMAND_NAME),
   conversation: async (conversation, ctx) => {
-    if (ctx.from === undefined) {
-      await ctx.reply('Боги отвечают лишь тем, у кого есть душа', {
-        disable_notification: true
-      });
-
+    if (!ctx.from) {
       return;
     }
 
-    const userName = getUserMentionHtmlString(ctx);
-
-    await ctx.reply(`${userName} вошел(ла) в режим поиска заклинаний.`, {
-      disable_notification: true,
-      reply_markup: new InlineKeyboard().text(
-        'Закончить поиск заклинаний',
-        cancelCallback.data
-      )
-    });
+    await ctx.reply(
+      `${getUserMentionHtmlString(ctx)} вошел(ла) в режим поиска заклинаний.`,
+      {
+        disable_notification: true,
+        reply_markup: getInlineKeyboard()
+      }
+    );
 
     const scene = new SpellConversation();
 
