@@ -48,95 +48,122 @@ const allowedTags = [
   'dice-roller'
 ];
 
+const turndownService = new TurndownService({
+  bulletListMarker: '-'
+});
+
+turndownService.use(gfm);
+
+turndownService.addRule('paragraph', {
+  filter: 'p',
+  replacement: (content, node) => {
+    if (!node.parentNode?.nodeName) {
+      return `\n\n${content}\n\n`;
+    }
+
+    return content;
+  }
+});
+
+turndownService.addRule('superscript', {
+  filter: node => node.nodeName === 'SUP',
+  replacement: content => ` [${content}]`
+});
+
+turndownService.addRule('tableCell', {
+  filter: node => node.nodeName === 'TH' || node.nodeName === 'TD',
+  replacement: (content, node) => {
+    const isLastElement =
+      node.nextSibling?.nodeName !== 'TH' &&
+      node.nextSibling?.nodeName !== 'TD';
+
+    return `| ${content}${isLastElement ? ' |' : ''}`;
+  }
+});
+
+turndownService.addRule('tableRow', {
+  filter: node => node.nodeName === 'TR',
+  replacement: content => `\n${content}\n`
+});
+
+turndownService.addRule('table', {
+  filter: node => node.nodeName === 'TABLE',
+  replacement: content => `\n${content}\n`
+});
+
+turndownService.addRule('diceRoller', {
+  filter: node => node.nodeName === 'DICE-ROLLER',
+  replacement: (content, node) => {
+    let text = '';
+
+    if ('getAttribute' in node && node.getAttribute('formula')) {
+      text = `<b>${node.getAttribute('formula')}</b>`;
+    }
+
+    if ('getAttribute' in node && node.getAttribute(':formula')) {
+      text = `<b>${node.getAttribute('formula')}</b>`;
+    }
+
+    if (content) {
+      text = `<b>${content}</b>`;
+    }
+
+    return text;
+  }
+});
+
+turndownService.addRule('inlineLink', {
+  filter: (node, options) =>
+    options.linkStyle === 'inlined' &&
+    node.nodeName === 'A' &&
+    !!node.getAttribute('href'),
+
+  replacement: (content, node) => {
+    const getUpdatedHref = (href: string) => {
+      if (href.startsWith('http')) {
+        return href;
+      }
+
+      return getUrl(href);
+    };
+
+    let href: string | null = null;
+
+    if ('getAttribute' in node) {
+      href = node.getAttribute('href');
+    }
+
+    if (href) {
+      href = getUpdatedHref(href);
+    }
+
+    return `<a href="${href}">${content}</a>`;
+  }
+});
+
+turndownService.addRule('baseTags', {
+  filter: [
+    // Bold
+    'b',
+    'strong',
+
+    // Italic
+    'i',
+    'em',
+
+    // Strikethrough
+    's',
+    'del',
+
+    // Underline
+    'u',
+    'ins'
+  ],
+  replacement: (content, node) =>
+    `<${node.nodeName.toLowerCase()}>${content}</${node.nodeName.toLowerCase()}>`
+});
+
 export const useMarkup = () => {
-  const turndownService = new TurndownService({
-    bulletListMarker: '-'
-  });
-
-  turndownService.use(gfm);
-
-  turndownService.addRule('paragraph', {
-    filter: 'p',
-    replacement: content => `\n\n${content}\n\n`
-  });
-
-  turndownService.addRule('superscript', {
-    filter: node => node.nodeName === 'SUP',
-    replacement: content => ` [${content}]`
-  });
-
-  turndownService.addRule('diceRoller', {
-    filter: node => node.nodeName === 'DICE-ROLLER',
-    replacement: (content, node) => {
-      let text = '';
-
-      if ('getAttribute' in node && node.getAttribute('formula')) {
-        text = `<b>${node.getAttribute('formula')}</b>`;
-      }
-
-      if ('getAttribute' in node && node.getAttribute(':formula')) {
-        text = `<b>${node.getAttribute('formula')}</b>`;
-      }
-
-      if (content) {
-        text = `<b>${content}</b>`;
-      }
-
-      return text;
-    }
-  });
-
-  turndownService.addRule('inlineLink', {
-    filter: (node, options) =>
-      options.linkStyle === 'inlined' &&
-      node.nodeName === 'A' &&
-      !!node.getAttribute('href'),
-
-    replacement: (content, node) => {
-      const getUpdatedHref = (href: string) => {
-        if (href.startsWith('http')) {
-          return href;
-        }
-
-        return getUrl(href);
-      };
-
-      let href: string | null = null;
-
-      if ('getAttribute' in node) {
-        href = node.getAttribute('href');
-      }
-
-      if (href) {
-        href = getUpdatedHref(href);
-      }
-
-      return `<a href="${href}">${content}</a>`;
-    }
-  });
-
-  turndownService.addRule('baseTags', {
-    filter: [
-      // Bold
-      'b',
-      'strong',
-
-      // Italic
-      'i',
-      'em',
-
-      // Strikethrough
-      's',
-      'del',
-
-      // Underline
-      'u',
-      'ins'
-    ],
-    replacement: (content, node) =>
-      `<${node.nodeName.toLowerCase()}>${content}</${node.nodeName.toLowerCase()}>`
-  });
-
   const getSanitized = (html: string) => sanitizeHtml(html, { allowedTags });
 
   const getMarkup = (html: string) => {
