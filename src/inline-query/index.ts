@@ -1,4 +1,5 @@
 import { InlineKeyboard, InlineQueryResultBuilder } from 'grammy';
+import { debounce } from 'lodash-es';
 
 import { useConfig } from '../utils/useConfig.js';
 import { useHelpers } from '../utils/useHelpers.js';
@@ -20,7 +21,7 @@ export const useInlineQueries = () => {
     }
   };
 
-  const handler = async (ctx: InlineQueryContext<IContext>) => {
+  const handler = debounce(async (ctx: InlineQueryContext<IContext>) => {
     const { query } = ctx.inlineQuery;
 
     if (!query || query.length < 3) {
@@ -73,7 +74,7 @@ export const useInlineQueries = () => {
     }
 
     return ctx.answerInlineQuery(spells, answerConfig);
-  };
+  }, 500);
 
   const registerInlineQueries = (bot: Bot<IContext>) => {
     bot.on('inline_query', ctx => handler(ctx));
