@@ -63,6 +63,10 @@ bot.catch(async (err: BotError) => {
     } else {
       console.error('Unknown error:', e);
     }
+
+    await bot.stop();
+
+    process.exit(1);
   }
 });
 
